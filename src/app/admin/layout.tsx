@@ -10,13 +10,13 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { Lock, LogIn, User, LayoutDashboard, LogOut, Ticket, Users, BarChart, Settings, Home, TicketPercent, Menu, LoaderCircle } from 'lucide-react';
+import { Lock, LogIn, User, LayoutDashboard, LogOut, Ticket, Users, BarChart, Settings, Home, TicketPercent, Menu, LoaderCircle, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, addDoc, getCountFromServer } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 
@@ -77,6 +77,43 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         setIsLoading(false);
     }
   };
+
+  const handleCreateDefaultAdmin = async () => {
+    setIsLoading(true);
+    try {
+        const adminsRef = collection(db, "admins");
+        const q = query(adminsRef, where("username", "==", "Albertine"));
+        const snapshot = await getCountFromServer(q);
+        
+        if (snapshot.data().count > 0) {
+            toast({
+                variant: 'destructive',
+                title: 'Admin Exists',
+                description: 'The default admin user "Albertine" already exists.',
+            });
+            return;
+        }
+
+        await addDoc(adminsRef, {
+            username: "Albertine",
+            password: "password"
+        });
+
+        toast({
+            title: 'Admin Created',
+            description: 'Default admin "Albertine" created with password "password". You can now log in.',
+        });
+    } catch (error) {
+        console.error("Error creating default admin:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Creation Failed',
+            description: 'Could not create the default admin user.',
+        });
+    } finally {
+        setIsLoading(false);
+    }
+  }
 
   const handleLogout = () => {
     setIsLoggedIn(false);
@@ -171,6 +208,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </Button>
               </form>
             </Form>
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  First time?
+                </span>
+              </div>
+            </div>
+             <Button variant="outline" className="w-full" onClick={handleCreateDefaultAdmin} disabled={isLoading}>
+                {isLoading ? <LoaderCircle className="h-4 w-4 animate-spin"/> : <UserPlus className="mr-2" />}
+                Create Default Admin
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -242,5 +293,3 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     </div>
   );
 }
-
-    
