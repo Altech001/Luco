@@ -83,15 +83,6 @@ export default function AdminDashboardPage() {
         <StatCard title="Subscribers" value={stats.subscribers} icon={Bell} isLoading={isLoading} />
       </div>
       <div className="mt-8 grid gap-8 md:grid-cols-2">
-        <Card>
-            <CardHeader>
-                <CardTitle>Welcome, Albertine!</CardTitle>
-                <CardDescription>Here's an overview of your voucher platform.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                 <p className="text-sm text-muted-foreground">You can manage users, view analytics, and configure settings from the sidebar.</p>
-            </CardContent>
-        </Card>
          <Card>
             <CardHeader>
                 <CardTitle>Recent Activity</CardTitle>
