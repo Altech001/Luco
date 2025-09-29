@@ -6,7 +6,7 @@ import type { Member, NewMember } from '@/types';
 // This is a simplified approach. In a real application, you would have a more secure way
 // to manage admin credentials, likely in a separate 'admins' collection.
 export async function getAdminCredentials(): Promise<{username: string, password?: string} | null> {
-  const q = query(collection(db, "members"), where("username", "==", "admin"), limit(1));
+  const q = query(collection(db, "admins"), limit(1));
   const querySnapshot = await getDocs(q);
 
   if (querySnapshot.empty) {
