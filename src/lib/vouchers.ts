@@ -1,4 +1,5 @@
 
+
 import { collection, getDocs, getDoc, query, orderBy, addDoc, doc, deleteDoc, updateDoc, Timestamp, writeBatch, where } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Voucher, VoucherCategoryName, VoucherProfile, NewVoucherProfileData } from '@/types';
@@ -112,6 +113,38 @@ export async function getVoucherById(id: string): Promise<Voucher | undefined> {
   } else {
     return undefined;
   }
+}
+
+export async function getVouchersByPhone(phone: string): Promise<Voucher[]> {
+    const vouchersRef = collection(db, 'vouchers');
+    const q = query(
+        vouchersRef,
+        where('purchasedBy', '==', phone),
+        where('status', '==', 'purchased'),
+        orderBy('purchasedAt', 'desc')
+    );
+    const querySnapshot = await getDocs(q);
+
+    const vouchers: Voucher[] = [];
+    querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        vouchers.push({
+            id: doc.id,
+            title: data.title,
+            description: data.description,
+            category: data.category as VoucherCategoryName,
+            price: data.price,
+            discount: data.discount,
+            expiryDate: data.expiryDate,
+            code: data.code,
+            isNew: data.isNew || false,
+            status: 'purchased',
+            purchasedBy: data.purchasedBy,
+            purchasedAt: data.purchasedAt?.toDate(),
+        });
+    });
+
+    return vouchers;
 }
 
 export async function updateVoucher(id: string, data: Partial<NewVoucherData & { status?: string, purchasedBy?: string, purchasedAt?: Timestamp }>): Promise<void> {
