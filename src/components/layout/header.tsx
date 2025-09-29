@@ -98,9 +98,9 @@ export default function Header() {
             </DialogContent>
           </Dialog>
           <Link href="/admin">
-            <Button variant="outline" size="icon">
-              <User className="h-4 w-4" />
-              <span className="sr-only">Admin</span>
+            <Button variant="outline" size="sm">
+              <User className="mr-0 h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Admin</span>
             </Button>
           </Link>
         </div>

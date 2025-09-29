@@ -6,16 +6,15 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { LayoutDashboard, Ticket, Users, BarChart, Settings, Home, TicketPercent, Menu, LoaderCircle, Image as ImageIcon, Bell, FileText } from 'lucide-react';
+import { LayoutDashboard, Ticket, Users, BarChart, Settings, Home, TicketPercent, Menu, LoaderCircle, Image as ImageIcon, Bell, FileText, Search, SlidersHorizontal, Link2, Landmark, Printer, MessageSquare, Cookie, Server, Broom, Power } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import AdminAuth from '@/components/admin-auth';
+import { SidebarProvider, Sidebar, SidebarTrigger, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarMenuSub, SidebarMenuSubButton } from '@/components/ui/sidebar';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const { toast } = useToast();
   const pathname = usePathname();
 
@@ -39,36 +38,46 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     });
   };
 
-  const navItems = [
+  const mainNav = [
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/admin/banners', label: 'Banners', icon: ImageIcon },
     { href: '/admin/vouchers', label: 'Vouchers', icon: Ticket },
     { href: '/admin/vouchers/voucher-profiles', label: 'Voucher Profiles', icon: FileText },
     { href: '/admin/members', label: 'Members', icon: Users },
-    { href: '/admin/subscribers', label: 'Subscribers', icon: Bell },
-    { href: '/admin/analytics', label: 'Analytics', icon: BarChart },
-    { href: '/admin/settings', label: 'Settings', icon: Settings },
   ];
 
-  const NavLinks = ({ isMobile = false }: { isMobile?: boolean }) => (
-    <nav className={cn("flex flex-col gap-2", isMobile ? "p-4" : "")}>
-      {navItems.map(item => (
-        <Link
-          key={item.href}
-          href={item.href}
-          onClick={() => isMobile && setIsMobileNavOpen(false)}
-          className={cn(
-            'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary relative',
-            pathname === item.href && 'font-bold text-primary',
-          )}
-        >
-          {pathname === item.href && <div className="absolute left-0 top-0 h-full w-1 bg-destructive rounded-r-full"></div>}
-          <item.icon className="h-4 w-4" />
-          {item.label}
-        </Link>
-      ))}
-    </nav>
-  );
+  const secondaryNav = [
+      {
+          label: '-- General',
+          items: [
+              { href: '/admin/analytics', label: 'Analytics', icon: BarChart },
+              { href: '/admin/settings', label: 'Settings', icon: Settings },
+              { href: '/admin/subscribers', label: 'Subscribers', icon: Bell },
+          ]
+      },
+      {
+          label: '-- Payment Methods',
+          items: [
+              { href: '#', label: 'Add Money', icon: Landmark },
+              { href: '#', label: 'Money Out', icon: Printer },
+          ]
+      },
+      {
+          label: '-- Notification',
+          items: [
+            { href: '#', label: 'Push Notification', icon: Bell },
+            { href: '#', label: 'Contact Messages', icon: MessageSquare },
+          ]
+      },
+      {
+          label: '-- Bonus',
+          items: [
+              { href: '#', label: 'GDPR Cookie', icon: Cookie },
+              { href: '#', label: 'Server Info', icon: Server },
+              { href: '#', a: 'Clear Cache', icon: Broom },
+          ]
+      }
+  ]
 
   if (isCheckingAuth) {
     return (
@@ -83,69 +92,80 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="flex min-h-screen w-full">
-      <aside className="hidden w-64 flex-col border-r bg-background p-4 md:flex">
-        <div className="flex items-center gap-2 sm:gap-3 mb-8">
-          <TicketPercent className="h-7 w-7 text-[hsl(var(--highlight))]" />
-          <h1 className="font-headline text-xl sm:text-2xl font-bold tracking-tight">
-            Luco
-          </h1>
-        </div>
-        <NavLinks />
-        <div className="mt-auto flex flex-col gap-2">
-          <Button variant="outline" asChild>
-            <Link href="/" className="flex items-center gap-3">
-              <Home className="h-4 w-4" />
-              Go to App
-            </Link>
-          </Button>
-        </div>
-      </aside>
-      <div className="flex flex-1 flex-col">
-        <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-4 border-b bg-background px-6">
-          <div className="flex items-center gap-4">
-            <Sheet open={isMobileNavOpen} onOpenChange={setIsMobileNavOpen}>
-              <SheetTrigger asChild className="md:hidden">
-                <Button variant="outline" size="icon">
-                  <Menu className="h-5 w-5" />
-                  <span className="sr-only">Toggle Navigation</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-64 p-0">
-                 <SheetHeader className="p-4 border-b">
-                    <SheetTitle className="flex items-center gap-2 sm:gap-3">
-                      <TicketPercent className="h-7 w-7 text-[hsl(var(--highlight))]" />
-                      <span className="font-headline text-xl sm:text-2xl font-bold tracking-tight">
-                        Luco
-                      </span>
-                    </SheetTitle>
-                 </SheetHeader>
-                <NavLinks isMobile />
-                <div className="p-4 mt-auto border-t">
-                  <Button variant="outline" asChild className="w-full">
-                    <Link href="/" className="flex items-center gap-3">
-                      <Home className="h-4 w-4" />
-                      Go to App
-                    </Link>
-                  </Button>
+    <SidebarProvider>
+      <Sidebar variant="inset" collapsible="icon" className="group/sidebar">
+        <SidebarContent className="p-2">
+            <div className='flex justify-between items-center group-data-[collapsible=icon]:justify-center mb-4'>
+                <div className='flex items-center gap-2 group-data-[collapsible=icon]:hidden'>
+                    <TicketPercent className="h-7 w-7 text-[hsl(var(--highlight))]" />
+                    <h1 className="font-headline text-xl sm:text-2xl font-bold tracking-tight">Luco</h1>
                 </div>
-              </SheetContent>
-            </Sheet>
-            <h1 className="text-xl font-semibold md:hidden">
-              {navItems.find(item => item.href === pathname)?.label}
+                <ThemeToggle />
+            </div>
+            
+             <SidebarGroup>
+                <SidebarMenu>
+                    {mainNav.map(item => (
+                        <SidebarMenuItem key={item.href}>
+                             <SidebarMenuButton asChild tooltip={item.label} isActive={pathname === item.href}>
+                                <Link href={item.href}>
+                                    <item.icon />
+                                    <span>{item.label}</span>
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    ))}
+                </SidebarMenu>
+            </SidebarGroup>
+
+            {secondaryNav.map(group => (
+                 <SidebarGroup key={group.label}>
+                    <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">{group.label}</SidebarGroupLabel>
+                    <SidebarMenu>
+                        {group.items.map(item => (
+                            <SidebarMenuItem key={item.label}>
+                                <SidebarMenuButton asChild tooltip={item.label} isActive={pathname === item.href}>
+                                    <Link href={item.href || "#"}>
+                                        <item.icon />
+                                        <span>{item.label}</span>
+                                    </Link>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        ))}
+                    </SidebarMenu>
+                </SidebarGroup>
+            ))}
+        </SidebarContent>
+        <SidebarFooter className='p-2'>
+             <SidebarMenu>
+                <SidebarMenuItem>
+                    <SidebarMenuButton onClick={handleLogout} tooltip="Logout">
+                        <Power/>
+                        <span>Logout</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <SidebarMenuButton asChild tooltip="Go to App">
+                        <Link href="/">
+                            <Home/>
+                            <span>Go to App</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+             </SidebarMenu>
+        </SidebarFooter>
+      </Sidebar>
+      <main className="flex-1">
+         <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-4 border-b bg-background px-6">
+            <SidebarTrigger className="md:hidden"/>
+             <h1 className="text-xl font-semibold">
+              {[...mainNav, ...secondaryNav.flatMap(g => g.items)].find(item => item.href === pathname)?.label || 'Dashboard'}
             </h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <ThemeToggle />
-            <Button variant="outline" onClick={handleLogout} size="sm">
-              Logout
-            </Button>
-          </div>
-        </header>
-        <main className="flex-1 p-6">
-          {children}
-        </main>
-      </div>
-    </div>
+         </header>
+         <div className="p-6">
+            {children}
+         </div>
+      </main>
+    </SidebarProvider>
   );
 }

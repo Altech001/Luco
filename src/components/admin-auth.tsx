@@ -45,7 +45,7 @@ export default function AdminAuth({ onLoginSuccess }: AdminAuthProps) {
       if (admin && values.username === admin.username && values.password === admin.password) {
         toast({
           title: 'Login Successful',
-          description: 'Welcome back, Albertine!',
+          description: 'Welcome back!',
         });
         onLoginSuccess();
       } else {
@@ -70,7 +70,7 @@ export default function AdminAuth({ onLoginSuccess }: AdminAuthProps) {
 
   return (
     <div className="flex min-h-screen w-full flex-col items-center justify-center bg-background p-4 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-1 bg-purple-500"></div>
+        <div className="absolute top-0 left-0 w-full h-1 bg-primary"></div>
         <div className="absolute top-1/4 left-1/4 w-16 h-16 bg-foreground/5 transform rotate-45 opacity-50"></div>
         <div className="absolute bottom-1/4 right-1/4 w-24 h-24 bg-foreground/5 transform rotate-12 opacity-50"></div>
         <div className="absolute top-1/2 right-1/4 w-8 h-8 bg-foreground/5 transform rotate-45 opacity-50"></div>
@@ -79,14 +79,14 @@ export default function AdminAuth({ onLoginSuccess }: AdminAuthProps) {
       <Card className="w-full max-w-sm rounded-lg z-10">
         <CardHeader className="text-center space-y-4">
             <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2">
-                <TicketPercent className="h-8 w-8 text-purple-400" />
-                <h1 className="font-headline text-2xl sm:text-3xl font-bold tracking-tight text-white">
+                <TicketPercent className="h-8 w-8 text-primary" />
+                <h1 className="font-headline text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
                     Luco
                 </h1>
             </div>
             <div className="flex items-center justify-center gap-2">
-                <Hand className="h-6 w-6 text-yellow-400 animate-wave" />
-                <p className="text-muted-foreground">Welcome To <span className="font-bold text-white">ADMIN PANEL</span></p>
+                <Hand className="h-6 w-6 text-yellow-400 animate-wave" style={{ animation: 'wave 2s infinite' }} />
+                <p className="text-muted-foreground">Welcome To <span className="font-bold text-foreground">ADMIN PANEL</span></p>
             </div>
         </CardHeader>
         <CardContent>
