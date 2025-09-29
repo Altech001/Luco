@@ -30,6 +30,11 @@ const smsSchema = z.object({
 
 type SmsFormValues = z.infer<typeof smsSchema>;
 
+const appearanceSchema = z.object({
+  theme: z.enum(["light", "dark", "system"]),
+})
+type AppearanceFormValues = z.infer<typeof appearanceSchema>
+
 export default function SettingsPage() {
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
@@ -53,6 +58,13 @@ export default function SettingsPage() {
         message: '',
     }
   });
+
+   const appearanceForm = useForm<AppearanceFormValues>({
+    resolver: zodResolver(appearanceSchema),
+    defaultValues: {
+      theme: theme as "light" | "dark" | "system",
+    },
+  })
 
   const handleCredsSubmit = (values: AdminCredsFormValues) => {
     setIsSubmittingCreds(true);
@@ -150,36 +162,46 @@ export default function SettingsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Form {...adminCredsForm}>
-              <FormItem className="space-y-3">
-                <FormLabel>Theme</FormLabel>
-                <FormControl>
-                  <RadioGroup
-                    onValueChange={setTheme}
-                    defaultValue={theme}
-                    className="flex flex-col space-y-1"
-                  >
-                    <FormItem className="flex items-center space-x-3 space-y-0">
-                      <FormControl>
-                        <RadioGroupItem value="light" />
-                      </FormControl>
-                      <FormLabel className="font-normal">Light</FormLabel>
-                    </FormItem>
-                    <FormItem className="flex items-center space-x-3 space-y-0">
-                      <FormControl>
-                        <RadioGroupItem value="dark" />
-                      </FormControl>
-                      <FormLabel className="font-normal">Dark</FormLabel>
-                    </FormItem>
-                    <FormItem className="flex items-center space-x-3 space-y-0">
-                      <FormControl>
-                        <RadioGroupItem value="system" />
-                      </FormControl>
-                      <FormLabel className="font-normal">System</FormLabel>
-                    </FormItem>
-                  </RadioGroup>
-                </FormControl>
-              </FormItem>
+            <Form {...appearanceForm}>
+              <FormField
+                control={appearanceForm.control}
+                name="theme"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel>Theme</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          setTheme(value);
+                        }}
+                        defaultValue={field.value}
+                        className="flex flex-col space-y-1"
+                      >
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="light" />
+                          </FormControl>
+                          <FormLabel className="font-normal">Light</FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="dark" />
+                          </FormControl>
+                          <FormLabel className="font-normal">Dark</FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="system" />
+                          </FormControl>
+                          <FormLabel className="font-normal">System</FormLabel>
+                        </FormItem>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </Form>
           </CardContent>
         </Card>
@@ -274,3 +296,5 @@ export default function SettingsPage() {
     </>
   );
 }
+
+    
