@@ -1,18 +1,38 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Header from '@/components/layout/header';
 import PersonalizedVouchers from '@/components/personalized-vouchers';
 import PromotionalBanners from '@/components/promotional-banners';
 import VoucherList from '@/components/voucher-list';
 import BottomNavBar from '@/components/layout/bottom-nav';
-import { vouchers as allVouchers, voucherCategoriesData } from '@/lib/data';
+import { voucherCategoriesData } from '@/lib/data';
+import { getVouchers } from '@/lib/vouchers';
+import type { Voucher } from '@/types';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Home() {
+  const [allVouchers, setAllVouchers] = useState<Voucher[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [recommendedIds, setRecommendedIds] = useState<string[]>([]);
   const [filter, setFilter] = useState<'all' | 'recommended'>('all');
   const [activeCategory, setActiveCategory] = useState('all');
+
+  useEffect(() => {
+    const fetchVouchers = async () => {
+      setIsLoading(true);
+      try {
+        const vouchersData = await getVouchers();
+        setAllVouchers(vouchersData);
+      } catch (error) {
+        console.error("Failed to fetch vouchers:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchVouchers();
+  }, []);
 
   const handleGetRecommendations = (ids: string[]) => {
     setRecommendedIds(ids);
@@ -43,14 +63,25 @@ export default function Home() {
             <PersonalizedVouchers onRecommendations={handleGetRecommendations} />
           </div>
 
-          <VoucherList
-            key={`${filter}-${activeCategory}`}
-            vouchers={vouchersToShow}
-            categories={voucherCategoriesData}
-            highlightedVoucherIds={recommendedIds}
-            onTabChange={handleCategoryChange}
-            initialTab={activeCategory}
-          />
+          {isLoading ? (
+            <div className="space-y-6">
+              <Skeleton className="h-8 w-48" />
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:gap-6">
+                <Skeleton className="h-40 w-full" />
+                <Skeleton className="h-40 w-full" />
+                <Skeleton className="h-40 w-full" />
+              </div>
+            </div>
+          ) : (
+            <VoucherList
+              key={`${filter}-${activeCategory}`}
+              vouchers={vouchersToShow}
+              categories={voucherCategoriesData}
+              highlightedVoucherIds={recommendedIds}
+              onTabChange={handleCategoryChange}
+              initialTab={activeCategory}
+            />
+          )}
         </div>
       </main>
       <BottomNavBar 

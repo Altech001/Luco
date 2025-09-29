@@ -1,29 +1,52 @@
 
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { vouchers } from '@/lib/data';
+import { getVoucherById } from '@/lib/vouchers';
 import type { Voucher } from '@/types';
 import VoucherPurchaseFlow from '@/components/voucher-purchase-flow';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, TicketPercent } from 'lucide-react';
+import { ArrowLeft, TicketPercent, LoaderCircle } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function PurchasePage() {
   const router = useRouter();
   const params = useParams();
   const voucherId = params.voucherId as string;
+  const [voucher, setVoucher] = useState<Voucher | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const voucher: Voucher | undefined = vouchers.find(v => v.id === voucherId);
-
-  if (!voucher) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
+  useEffect(() => {
+    if (voucherId) {
+      const fetchVoucher = async () => {
+        setIsLoading(true);
+        const fetchedVoucher = await getVoucherById(voucherId);
+        setVoucher(fetchedVoucher);
+        setIsLoading(false);
+      };
+      fetchVoucher();
+    }
+  }, [voucherId]);
+  
+  const NotFound = () => (
+     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
         <h1 className="text-2xl font-bold">Voucher not found</h1>
         <p className="text-muted-foreground">The voucher you are trying to purchase does not exist.</p>
         <Button onClick={() => router.push('/')} className="mt-4">Go back to Home</Button>
       </div>
-    );
+  );
+
+  if (isLoading) {
+    return (
+       <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
+          <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
+       </div>
+    )
+  }
+
+  if (!voucher) {
+    return <NotFound />;
   }
 
   return (
