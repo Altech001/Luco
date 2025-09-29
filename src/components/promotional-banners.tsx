@@ -75,7 +75,7 @@ export default function PromotionalBanners() {
         opts={{ loop: true }}
         plugins={[
             Autoplay({
-              delay: 7000,
+              delay: 6000,
               stopOnInteraction: true,
             }),
         ]}
