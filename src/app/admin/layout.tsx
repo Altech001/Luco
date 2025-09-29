@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -10,11 +10,14 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { Lock, LogIn, User, LayoutDashboard, LogOut, Ticket, Users, BarChart, Settings, Home, TicketPercent } from 'lucide-react';
+import { Lock, LogIn, User, LayoutDashboard, LogOut, Ticket, Users, BarChart, Settings, Home, TicketPercent, Menu, LoaderCircle } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 
 const loginSchema = z.object({
@@ -24,32 +27,60 @@ const loginSchema = z.object({
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+
   const { toast } = useToast();
   const pathname = usePathname();
+
+  useEffect(() => {
+    const authStatus = sessionStorage.getItem('isAdminLoggedIn');
+    setIsLoggedIn(authStatus === 'true');
+    setIsCheckingAuth(false);
+  }, []);
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: { username: '', password: '' },
   });
 
-  const handleLogin = (values: z.infer<typeof loginSchema>) => {
-    if (values.username === 'Albertine' && values.password === 'password') {
-      setIsLoggedIn(true);
-      toast({
-        title: 'Login Successful',
-        description: 'Welcome, Albertine!',
-      });
-    } else {
-      toast({
-        variant: 'destructive',
-        title: 'Login Failed',
-        description: 'Invalid username or password.',
-      });
+  const handleLogin = async (values: z.infer<typeof loginSchema>) => {
+    setIsLoading(true);
+    try {
+        const adminsRef = collection(db, "admins");
+        const q = query(adminsRef, where("username", "==", values.username), where("password", "==", values.password));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            setIsLoggedIn(true);
+            sessionStorage.setItem('isAdminLoggedIn', 'true');
+            toast({
+                title: 'Login Successful',
+                description: `Welcome, ${values.username}!`,
+            });
+        } else {
+             toast({
+                variant: 'destructive',
+                title: 'Login Failed',
+                description: 'Invalid username or password.',
+            });
+        }
+    } catch (error) {
+        console.error("Firebase auth error:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Login Error',
+            description: 'Could not connect to authentication service.',
+        });
+    } finally {
+        setIsLoading(false);
     }
   };
 
   const handleLogout = () => {
     setIsLoggedIn(false);
+    sessionStorage.removeItem('isAdminLoggedIn');
     toast({
         title: 'Logged Out',
         description: 'You have been successfully logged out.',
@@ -63,6 +94,33 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { href: '/admin/analytics', label: 'Analytics', icon: BarChart },
     { href: '/admin/settings', label: 'Settings', icon: Settings },
   ];
+
+  const NavLinks = ({isMobile = false}: {isMobile?: boolean}) => (
+    <nav className={cn("flex flex-col gap-2", isMobile ? "p-4" : "")}>
+        {navItems.map(item => (
+        <Link
+            key={item.href}
+            href={item.href}
+            onClick={() => isMobile && setIsMobileNavOpen(false)}
+            className={cn(
+            'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
+            pathname === item.href && 'bg-accent text-primary'
+            )}
+        >
+            <item.icon className="h-4 w-4" />
+            {item.label}
+        </Link>
+        ))}
+    </nav>
+  );
+
+  if (isCheckingAuth) {
+    return (
+        <div className="flex min-h-screen items-center justify-center">
+            <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
+        </div>
+    );
+  }
 
   if (!isLoggedIn) {
     return (
@@ -107,8 +165,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full">
-                  <LogIn className="mr-2" /> Login
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? <LoaderCircle className="h-4 w-4 animate-spin"/> : <LogIn className="mr-2" />} 
+                  {isLoading ? 'Verifying...' : 'Login'}
                 </Button>
               </form>
             </Form>
@@ -127,21 +186,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             Luco
           </h1>
         </div>
-        <nav className="flex flex-col gap-2">
-          {navItems.map(item => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
-                pathname === item.href && 'bg-accent text-primary'
-              )}
-            >
-              <item.icon className="h-4 w-4" />
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+        <NavLinks />
         <div className="mt-auto flex flex-col gap-2">
            <Button variant="outline" asChild>
                 <Link href="/" className="flex items-center gap-3">
@@ -153,8 +198,35 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
       <div className="flex flex-1 flex-col">
         <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-4 border-b bg-background px-6">
-            <div>
-                {/* Could add breadcrumbs or mobile nav toggle here */}
+            <div className="flex items-center gap-4">
+                 <Sheet open={isMobileNavOpen} onOpenChange={setIsMobileNavOpen}>
+                    <SheetTrigger asChild className="md:hidden">
+                        <Button variant="outline" size="icon">
+                            <Menu className="h-5 w-5" />
+                            <span className="sr-only">Toggle Navigation</span>
+                        </Button>
+                    </SheetTrigger>
+                    <SheetContent side="left" className="w-64 p-0">
+                         <div className="flex items-center gap-2 sm:gap-3 p-4 border-b">
+                            <TicketPercent className="h-7 w-7 text-[hsl(var(--highlight))]" />
+                            <h1 className="font-headline text-xl sm:text-2xl font-bold tracking-tight">
+                                Luco
+                            </h1>
+                        </div>
+                        <NavLinks isMobile />
+                         <div className="p-4 mt-auto border-t">
+                            <Button variant="outline" asChild className="w-full">
+                                    <Link href="/" className="flex items-center gap-3">
+                                        <Home className="h-4 w-4"/>
+                                        Go to App
+                                    </Link>
+                            </Button>
+                        </div>
+                    </SheetContent>
+                </Sheet>
+                 <h1 className="text-xl font-semibold md:hidden">
+                    {navItems.find(item => item.href === pathname)?.label}
+                </h1>
             </div>
             <div className="flex items-center gap-4">
                 <ThemeToggle />
@@ -170,3 +242,5 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     </div>
   );
 }
+
+    
