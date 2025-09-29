@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Smartphone, KeyRound, LoaderCircle, TicketIcon, Bot, CheckCircle, UserCircle, Wallet } from 'lucide-react';
+import { Smartphone, KeyRound, LoaderCircle, TicketIcon, Bot, CheckCircle, UserCircle, Wallet, Send, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -123,6 +123,14 @@ export default function VoucherPurchaseFlow({ voucher, onComplete }: VoucherPurc
       });
     }
   };
+
+  const handleSendSms = () => {
+    // In a real app, you'd call an SMS service here.
+    toast({
+        title: 'SMS Sent!',
+        description: `Your voucher code has been sent to ${phoneNumber}.`
+    });
+  }
   
   const formattedPrice = new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -273,9 +281,14 @@ export default function VoucherPurchaseFlow({ voucher, onComplete }: VoucherPurc
                     </div>
                   </div>
             </div>
-            <Button className="w-full" onClick={onComplete}>
-                Done
-            </Button>
+            <div className="flex flex-col gap-2">
+                <Button className="w-full" onClick={handleSendSms}>
+                    <Send className="mr-2"/> Send via SMS
+                </Button>
+                <Button variant="outline" className="w-full" onClick={onComplete}>
+                    <Home className="mr-2"/> Done
+                </Button>
+            </div>
           </MotionDiv>
         );
 
