@@ -82,7 +82,7 @@ export default function AdminDashboardPage() {
         <StatCard title="Members" value={stats.members} icon={Users} isLoading={isLoading} />
         <StatCard title="Subscribers" value={stats.subscribers} icon={Bell} isLoading={isLoading} />
       </div>
-      <div className="mt-8 grid gap-8 md:grid-cols-2">
+      <div className="mt-8">
          <Card>
             <CardHeader>
                 <CardTitle>Recent Activity</CardTitle>
