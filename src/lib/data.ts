@@ -10,7 +10,7 @@ export const vouchers: Voucher[] = [
     discount: '50%',
     code: 'LUCODAY50',
     expiryDate: '24 Dec 2024',
-    price: 5000,
+    price: 1000,
     isNew: true,
   },
   {
@@ -21,7 +21,7 @@ export const vouchers: Voucher[] = [
     discount: 'BOGO',
     code: 'WEEKLYPASTRY',
     expiryDate: '28 Dec 2024',
-    price: 12000,
+    price: 4000,
   },
   {
     id: 'LM001',
@@ -31,7 +31,7 @@ export const vouchers: Voucher[] = [
     discount: '20%',
     code: 'LUCOMONTH20',
     expiryDate: '31 Jan 2025',
-    price: 25000,
+    price: 18000,
   },
   {
     id: 'MEM001',
@@ -62,7 +62,7 @@ export const vouchers: Voucher[] = [
     discount: 'Free Drink',
     code: 'LUNCHDEAL',
     expiryDate: '24 Dec 2024',
-    price: 15000,
+    price: 1000,
   },
   {
     id: 'LW002',
@@ -72,7 +72,7 @@ export const vouchers: Voucher[] = [
     discount: '15%',
     code: 'WKNDBRUNCH',
     expiryDate: '29 Dec 2024',
-    price: 40000,
+    price: 4000,
   },
   {
     id: 'MEM002',
@@ -103,7 +103,7 @@ export const vouchers: Voucher[] = [
     discount: '10%',
     code: 'BEANSUB10',
     expiryDate: '31 Jan 2025',
-    price: 80000,
+    price: 18000,
   },
 ];
 
