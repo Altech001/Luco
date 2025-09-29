@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -44,6 +44,12 @@ export default function VoucherPurchaseFlow({ voucher, onComplete }: VoucherPurc
     resolver: zodResolver(phoneSchema),
     defaultValues: { phone: '' },
   });
+  
+  useEffect(() => {
+    if (voucher.category === 'Promo' && voucher.price === 0) {
+      setStep('receipt');
+    }
+  }, [voucher]);
   
   const isVoucherUnavailable = voucher.status === 'purchased' || voucher.status === 'expired';
 
@@ -150,6 +156,14 @@ export default function VoucherPurchaseFlow({ voucher, onComplete }: VoucherPurc
   };
   
   const handleSendSms = () => {
+    if (!phoneNumber) {
+        toast({
+            variant: 'destructive',
+            title: 'Phone Number Missing',
+            description: "We don't have a phone number to send the SMS to."
+        });
+        return;
+    }
     toast({
         title: "SMS Sent!",
         description: `Your voucher code has been sent to ${phoneNumber}.`
@@ -259,10 +273,13 @@ export default function VoucherPurchaseFlow({ voucher, onComplete }: VoucherPurc
         );
 
       case 'receipt':
+        const isFreePromo = voucher.category === 'Promo' && voucher.price === 0;
         return (
           <MotionDiv initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <div className="flex flex-col space-y-1.5 text-center sm:text-left mb-4">
-              <h2 className="text-lg font-semibold leading-none tracking-tight">Purchase Complete!</h2>
+              <h2 className="text-lg font-semibold leading-none tracking-tight">
+                {isFreePromo ? "Your Promotional Voucher" : "Purchase Complete!"}
+              </h2>
               <p className="text-sm text-muted-foreground">Here is your voucher. Present this code at the store.</p>
             </div>
             <div className="py-6">
@@ -289,7 +306,7 @@ export default function VoucherPurchaseFlow({ voucher, onComplete }: VoucherPurc
                   </div>
             </div>
             <div className="flex flex-col gap-2">
-                <Button className="w-full" onClick={handleSendSms}>
+                <Button className="w-full" onClick={handleSendSms} disabled={isFreePromo}>
                     <Send className="mr-2"/> Send via SMS
                 </Button>
                 <Button variant="outline" className="w-full" onClick={onComplete}>
