@@ -35,12 +35,17 @@ const appearanceSchema = z.object({
 })
 type AppearanceFormValues = z.infer<typeof appearanceSchema>
 
+const promotionsSchema = z.object({
+    promoPaymentsEnabled: z.boolean().default(false),
+})
+type PromotionsFormValues = z.infer<typeof promotionsSchema>;
+
+
 export default function SettingsPage() {
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
   const [isSubmittingCreds, setIsSubmittingCreds] = useState(false);
   const [isSubmittingSms, setIsSubmittingSms] = useState(false);
-  const [promoPaymentsEnabled, setPromoPaymentsEnabled] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
 
@@ -62,9 +67,16 @@ export default function SettingsPage() {
    const appearanceForm = useForm<AppearanceFormValues>({
     resolver: zodResolver(appearanceSchema),
     defaultValues: {
-      theme: theme as "light" | "dark" | "system",
+      theme: (theme as "light" | "dark" | "system") || "system",
     },
   })
+
+  const promotionsForm = useForm<PromotionsFormValues>({
+    resolver: zodResolver(promotionsSchema),
+    defaultValues: {
+        promoPaymentsEnabled: false,
+    }
+  });
 
   const handleCredsSubmit = (values: AdminCredsFormValues) => {
     setIsSubmittingCreds(true);
@@ -215,22 +227,32 @@ export default function SettingsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                <div className="space-y-0.5">
-                  <FormLabel className="text-base">
-                    Enable Payments for Promos
-                  </FormLabel>
-                  <FormDescription>
-                    If enabled, "Promo" category vouchers can have a price.
-                  </FormDescription>
-                </div>
-                <FormControl>
-                  <Switch
-                    checked={promoPaymentsEnabled}
-                    onCheckedChange={setPromoPaymentsEnabled}
-                  />
-                </FormControl>
-              </FormItem>
+            <Form {...promotionsForm}>
+              <form>
+                <FormField
+                    control={promotionsForm.control}
+                    name="promoPaymentsEnabled"
+                    render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                        <FormLabel className="text-base">
+                            Enable Payments for Promos
+                        </FormLabel>
+                        <FormDescription>
+                            If enabled, "Promo" category vouchers can have a price.
+                        </FormDescription>
+                        </div>
+                        <FormControl>
+                        <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                        />
+                        </FormControl>
+                    </FormItem>
+                    )}
+                />
+              </form>
+            </Form>
           </CardContent>
         </Card>
 
@@ -296,5 +318,4 @@ export default function SettingsPage() {
     </>
   );
 }
-
     
