@@ -2,7 +2,7 @@
 import type { LucideIcon, LucideProps } from "lucide-react";
 import type { ForwardRefExoticComponent, RefAttributes } from "react";
 
-export type VoucherCategoryName = 'Luco Day' | 'Luco Week' | 'Luco Month' | 'Member' | 'Promo';
+export type VoucherCategoryName = 'Luco Day' | 'Luco Week' | 'Luco Month' | 'Member' | 'Promo' | string;
 
 export type Voucher = {
   id: string;
@@ -15,6 +15,18 @@ export type Voucher = {
   price: number;
   isNew?: boolean;
 };
+
+export type VoucherProfile = {
+  id: string;
+  name: string;
+  title: string;
+  description: string;
+  category: VoucherCategoryName;
+  price: number;
+  discount: string;
+};
+
+export type NewVoucherProfileData = Omit<VoucherProfile, 'id'>;
 
 export type VoucherCategory = {
     name: 'All' | VoucherCategoryName;

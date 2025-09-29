@@ -1,10 +1,11 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import Papa from 'papaparse';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -18,11 +19,10 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, LoaderCircle, MoreHorizontal, Pencil, Trash2, Ticket, Tag, Calendar, DollarSign, Percent, FileText } from 'lucide-react';
+import { PlusCircle, LoaderCircle, MoreHorizontal, Pencil, Trash2, Ticket, Tag, Calendar, DollarSign, Percent, FileText, Upload } from 'lucide-react';
 import { Switch } from "@/components/ui/switch"
-import type { Voucher } from '@/types';
-import { getVouchers, addVoucher, updateVoucher, deleteVoucher } from '@/lib/vouchers';
-import { voucherCategoriesData } from '@/lib/data';
+import type { Voucher, VoucherProfile } from '@/types';
+import { getVouchers, addVoucher, updateVoucher, deleteVoucher, batchAddVouchers, getVoucherProfiles } from '@/lib/vouchers';
 import {
   Dialog,
   DialogContent,
@@ -60,7 +60,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format, parse } from 'date-fns';
+import { format, parse, addDays } from 'date-fns';
 
 const voucherSchema = z.object({
   title: z.string().min(1, 'Title is required.'),
@@ -79,10 +79,12 @@ function VoucherForm({
   initialValues,
   onSubmit,
   isSubmitting,
+  voucherProfiles
 }: {
   initialValues?: VoucherFormValues;
   onSubmit: (values: VoucherFormValues) => Promise<void>;
   isSubmitting: boolean;
+  voucherProfiles: VoucherProfile[];
 }) {
   const form = useForm<VoucherFormValues>({
     resolver: zodResolver(voucherSchema),
@@ -102,6 +104,8 @@ function VoucherForm({
     await onSubmit(values);
     form.reset();
   };
+  
+  const categories = [...new Set(voucherProfiles.map(p => p.category))];
 
   return (
     <Form {...form}>
@@ -152,9 +156,9 @@ function VoucherForm({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {voucherCategoriesData.map(cat => (
-                      <SelectItem key={cat.name} value={cat.name}>
-                        {cat.name}
+                    {categories.map(cat => (
+                      <SelectItem key={cat} value={cat}>
+                        {cat}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -265,25 +269,106 @@ function VoucherForm({
   );
 }
 
+const importSchema = z.object({
+  profileId: z.string().min(1, "Please select a profile."),
+  csvFile: z.instanceof(FileList).refine(files => files?.length === 1, "CSV file is required."),
+});
+type ImportFormValues = z.infer<typeof importSchema>;
+
+function ImportDialog({ isImportOpen, setIsImportOpen, voucherProfiles, onImport, isSubmitting }: {
+  isImportOpen: boolean,
+  setIsImportOpen: (open: boolean) => void,
+  voucherProfiles: VoucherProfile[],
+  onImport: (data: ImportFormValues) => void,
+  isSubmitting: boolean
+}) {
+  const form = useForm<ImportFormValues>({
+    resolver: zodResolver(importSchema),
+  });
+  const fileRef = form.register("csvFile");
+
+  return (
+     <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Import Vouchers from CSV</DialogTitle>
+            <DialogDescription>Select a profile and upload a Mikrotik-compatible CSV file.</DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onImport)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="profileId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Voucher Profile</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a profile for this import" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {voucherProfiles.map(p => (
+                          <SelectItem key={p.id} value={p.id}>{p.name} ({p.category})</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="csvFile"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CSV File</FormLabel>
+                    <FormControl>
+                      <Input type="file" accept=".csv" {...fileRef} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? <LoaderCircle className="animate-spin" /> : 'Import Vouchers'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+  );
+}
+
 export default function VouchersPage() {
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
+  const [voucherProfiles, setVoucherProfiles] = useState<VoucherProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAddEditDialogOpen, setIsAddEditDialogOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(null);
   const { toast } = useToast();
 
-  const fetchVouchers = async () => {
+  const fetchData = async () => {
     setIsLoading(true);
     try {
-      const vouchersData = await getVouchers();
+      const [vouchersData, profilesData] = await Promise.all([
+        getVouchers(),
+        getVoucherProfiles()
+      ]);
       setVouchers(vouchersData);
+      setVoucherProfiles(profilesData);
     } catch (error) {
-      console.error("Error fetching vouchers:", error);
+      console.error("Error fetching data:", error);
       toast({
         variant: 'destructive',
-        title: 'Failed to load vouchers',
-        description: 'Could not fetch voucher data from the server.',
+        title: 'Failed to load data',
+        description: 'Could not fetch vouchers or profiles from the server.',
       });
     } finally {
       setIsLoading(false);
@@ -291,14 +376,14 @@ export default function VouchersPage() {
   };
 
   useEffect(() => {
-    fetchVouchers();
+    fetchData();
   }, []);
   
   const handleDialogChange = (open: boolean) => {
     if (!open) {
         setSelectedVoucher(null);
     }
-    setIsDialogOpen(open);
+    setIsAddEditDialogOpen(open);
   }
 
   const handleSubmit = async (values: VoucherFormValues) => {
@@ -317,9 +402,9 @@ export default function VouchersPage() {
                 description: 'The new voucher has been saved.',
             });
         }
-      setIsDialogOpen(false);
+      setIsAddEditDialogOpen(false);
       setSelectedVoucher(null);
-      fetchVouchers();
+      fetchData();
     } catch (error) {
       console.error("Error saving voucher:", error);
       toast({
@@ -339,7 +424,7 @@ export default function VouchersPage() {
         title: 'Voucher Deleted',
         description: 'The voucher has been removed.',
       });
-      fetchVouchers();
+      fetchData();
     } catch (error) {
       console.error('Error deleting voucher:', error);
       toast({
@@ -348,6 +433,63 @@ export default function VouchersPage() {
         description: 'Could not delete the voucher.',
       });
     }
+  };
+
+  const handleImport = async (data: ImportFormValues) => {
+    setIsSubmitting(true);
+    const file = data.csvFile[0];
+    const profile = voucherProfiles.find(p => p.id === data.profileId);
+    if (!profile) {
+      toast({ variant: 'destructive', title: 'Import Error', description: 'Selected profile not found.' });
+      setIsSubmitting(false);
+      return;
+    }
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        try {
+          const newVouchers = results.data.map((row: any) => {
+            const timeLimit = row['Time Limit'];
+            let expiryDate = format(addDays(new Date(), 30), 'dd MMM yyyy'); // Default
+            if (timeLimit && /^\d+d$/.test(timeLimit)) {
+              const days = parseInt(timeLimit.replace('d', ''));
+              expiryDate = format(addDays(new Date(), days), 'dd MMM yyyy');
+            }
+
+            return {
+              title: profile.title,
+              description: profile.description,
+              category: profile.category,
+              price: profile.price,
+              discount: profile.discount,
+              code: row.Username,
+              expiryDate: expiryDate,
+              isNew: true,
+            };
+          });
+
+          await batchAddVouchers(newVouchers);
+          toast({
+            title: `Import Successful`,
+            description: `${newVouchers.length} vouchers have been added.`,
+          });
+          setIsImportOpen(false);
+          fetchData();
+        } catch (error) {
+          console.error("Error importing vouchers:", error);
+          toast({ variant: 'destructive', title: 'Import Failed', description: 'Could not save the imported vouchers.' });
+        } finally {
+          setIsSubmitting(false);
+        }
+      },
+      error: (error) => {
+        console.error("CSV Parsing error:", error);
+        toast({ variant: 'destructive', title: 'CSV Error', description: 'Failed to parse the CSV file.' });
+        setIsSubmitting(false);
+      }
+    });
   };
   
   const formattedPrice = (price: number) => new Intl.NumberFormat('en-US', {
@@ -358,32 +500,16 @@ export default function VouchersPage() {
 
   return (
     <>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <h1 className="text-3xl font-bold">Manage Vouchers</h1>
-        <Dialog open={isDialogOpen} onOpenChange={handleDialogChange}>
-          <DialogTrigger asChild>
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" /> Add Voucher
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>{selectedVoucher ? 'Edit Voucher' : 'Add New Voucher'}</DialogTitle>
-              <DialogDescription>
-                {selectedVoucher ? 'Make changes to the voucher details below.' : 'Fill out the form to create a new voucher.'}
-              </DialogDescription>
-            </DialogHeader>
-            <VoucherForm
-              key={selectedVoucher?.id || 'new'}
-              initialValues={selectedVoucher ? {
-                ...selectedVoucher,
-                expiryDate: selectedVoucher.expiryDate
-              } : undefined}
-              onSubmit={handleSubmit}
-              isSubmitting={isSubmitting}
-            />
-          </DialogContent>
-        </Dialog>
+        <div className="flex gap-2">
+           <Button variant="outline" onClick={() => setIsImportOpen(true)}>
+            <Upload className="mr-2 h-4 w-4" /> Import
+          </Button>
+          <Button onClick={() => setIsAddEditDialogOpen(true)}>
+            <PlusCircle className="mr-2 h-4 w-4" /> Add Voucher
+          </Button>
+        </div>
       </div>
       <Card className="mt-8">
         <CardHeader>
@@ -430,7 +556,7 @@ export default function VouchersPage() {
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                   <DropdownMenuItem onSelect={() => {
                                       setSelectedVoucher(voucher);
-                                      setIsDialogOpen(true);
+                                      setIsAddEditDialogOpen(true);
                                   }}>
                                     <Pencil className="mr-2 h-4 w-4" /> Edit
                                   </DropdownMenuItem>
@@ -472,6 +598,35 @@ export default function VouchersPage() {
           )}
         </CardContent>
       </Card>
+      
+       <Dialog open={isAddEditDialogOpen} onOpenChange={handleDialogChange}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>{selectedVoucher ? 'Edit Voucher' : 'Add New Voucher'}</DialogTitle>
+              <DialogDescription>
+                {selectedVoucher ? 'Make changes to the voucher details below.' : 'Fill out the form to create a new voucher.'}
+              </DialogDescription>
+            </DialogHeader>
+            <VoucherForm
+              key={selectedVoucher?.id || 'new'}
+              initialValues={selectedVoucher ? {
+                ...selectedVoucher,
+                expiryDate: selectedVoucher.expiryDate
+              } : undefined}
+              onSubmit={handleSubmit}
+              isSubmitting={isSubmitting}
+              voucherProfiles={voucherProfiles}
+            />
+          </DialogContent>
+        </Dialog>
+      
+      <ImportDialog 
+        isImportOpen={isImportOpen}
+        setIsImportOpen={setIsImportOpen}
+        voucherProfiles={voucherProfiles}
+        onImport={handleImport}
+        isSubmitting={isSubmitting}
+      />
     </>
   );
 }
