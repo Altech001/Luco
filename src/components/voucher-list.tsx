@@ -39,7 +39,7 @@ export default function VoucherList({
     <div>
       <h2 className="font-headline text-3xl font-bold tracking-tight">Available Vouchers</h2>
       <Tabs defaultValue={initialTab} className="mt-4" onValueChange={handleValueChange}>
-        <TabsList className="grid w-full grid-cols-3 sm:w-auto sm:inline-flex md:grid-cols-6">
+        <TabsList className="h-auto flex-wrap justify-start sm:inline-flex sm:w-auto sm:flex-nowrap">
           {allCategories.map(cat => (
             <TabsTrigger key={cat.name} value={cat.name.toLowerCase().replace(' ', '')} className="text-xs sm:text-sm">
               <cat.icon className="mr-2 h-4 w-4" />
