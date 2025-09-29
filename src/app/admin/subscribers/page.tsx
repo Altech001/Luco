@@ -56,6 +56,7 @@ const phoneSchema = z.object({
 });
 
 type PhoneFormValues = z.infer<typeof phoneSchema>;
+const SUBSCRIBERS_PER_PAGE = 5;
 
 export default function SubscribersPage() {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
@@ -64,6 +65,7 @@ export default function SubscribersPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedSubscriber, setSelectedSubscriber] = useState<Subscriber | null>(null);
   const { toast } = useToast();
+  const [currentPage, setCurrentPage] = useState(1);
 
   const form = useForm<PhoneFormValues>({
     resolver: zodResolver(phoneSchema),
@@ -156,6 +158,12 @@ export default function SubscribersPage() {
     }
   };
 
+  const totalPages = Math.ceil(subscribers.length / SUBSCRIBERS_PER_PAGE);
+  const paginatedSubscribers = subscribers.slice(
+    (currentPage - 1) * SUBSCRIBERS_PER_PAGE,
+    currentPage * SUBSCRIBERS_PER_PAGE
+  );
+
   return (
     <>
       <div className="flex items-center justify-between">
@@ -182,6 +190,7 @@ export default function SubscribersPage() {
               <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
+            <>
              <div className="rounded-md border">
               <Table>
                 <TableHeader>
@@ -192,8 +201,8 @@ export default function SubscribersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {subscribers.length > 0 ? (
-                    subscribers.map((subscriber) => (
+                  {paginatedSubscribers.length > 0 ? (
+                    paginatedSubscribers.map((subscriber) => (
                       <TableRow key={subscriber.id}>
                         <TableCell className="font-medium">{subscriber.phone}</TableCell>
                         <TableCell>{format(subscriber.subscribedAt, 'PPP p')}</TableCell>
@@ -249,6 +258,30 @@ export default function SubscribersPage() {
                 </TableBody>
               </Table>
             </div>
+             <div className="flex items-center justify-between pt-4">
+                <div className="text-sm text-muted-foreground">
+                    Page {totalPages > 0 ? currentPage : 0} of {totalPages}
+                </div>
+                <div className="flex gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                    >
+                        Previous
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages || totalPages === 0}
+                    >
+                        Next
+                    </Button>
+                </div>
+            </div>
+            </>
           )}
         </CardContent>
       </Card>
