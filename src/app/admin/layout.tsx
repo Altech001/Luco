@@ -87,38 +87,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <SidebarProvider>
       <Sidebar variant="inset" collapsible="icon" className="group/sidebar">
-        <SidebarContent className="p-2">
-            <div className='flex justify-between items-center group-data-[collapsible=icon]:justify-center mb-4'>
-                <div className='flex items-center gap-2 group-data-[collapsible=icon]:hidden'>
-                    <TicketPercent className="h-7 w-7 text-[hsl(var(--highlight))]" />
-                    <h1 className="font-headline text-xl sm:text-2xl font-bold tracking-tight">Luco</h1>
+        <SidebarContent className="flex flex-col p-2">
+            <div>
+                <div className='flex justify-between items-center group-data-[collapsible=icon]:justify-center mb-4'>
+                    <div className='flex items-center gap-2 group-data-[collapsible=icon]:hidden'>
+                        <TicketPercent className="h-7 w-7 text-[hsl(var(--highlight))]" />
+                        <h1 className="font-headline text-xl sm:text-2xl font-bold tracking-tight">Luco</h1>
+                    </div>
+                    <ThemeToggle />
                 </div>
-                <ThemeToggle />
-            </div>
-            
-             <SidebarGroup>
-                <SidebarMenu>
-                    {mainNav.map(item => (
-                        <SidebarMenuItem key={item.href}>
-                             <SidebarMenuButton asChild tooltip={item.label} isActive={pathname === item.href}>
-                                <Link href={item.href}>
-                                    <item.icon />
-                                    <span>{item.label}</span>
-                                </Link>
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
-                    ))}
-                </SidebarMenu>
-            </SidebarGroup>
-
-            {secondaryNav.map(group => (
-                 <SidebarGroup key={group.label}>
-                    <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">{group.label}</SidebarGroupLabel>
+                
+                <SidebarGroup>
                     <SidebarMenu>
-                        {group.items.map(item => (
-                            <SidebarMenuItem key={item.label}>
+                        {mainNav.map(item => (
+                            <SidebarMenuItem key={item.href}>
                                 <SidebarMenuButton asChild tooltip={item.label} isActive={pathname === item.href}>
-                                    <Link href={item.href || "#"}>
+                                    <Link href={item.href}>
                                         <item.icon />
                                         <span>{item.label}</span>
                                     </Link>
@@ -127,26 +111,44 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         ))}
                     </SidebarMenu>
                 </SidebarGroup>
-            ))}
+
+                {secondaryNav.map(group => (
+                    <SidebarGroup key={group.label}>
+                        <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">{group.label}</SidebarGroupLabel>
+                        <SidebarMenu>
+                            {group.items.map(item => (
+                                <SidebarMenuItem key={item.label}>
+                                    <SidebarMenuButton asChild tooltip={item.label} isActive={pathname === item.href}>
+                                        <Link href={item.href || "#"}>
+                                            <item.icon />
+                                            <span>{item.label}</span>
+                                        </Link>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            ))}
+                        </SidebarMenu>
+                    </SidebarGroup>
+                ))}
+            </div>
+            <div className='mt-auto'>
+                <SidebarMenu className="grid grid-cols-2 gap-1">
+                    <SidebarMenuItem>
+                        <SidebarMenuButton onClick={handleLogout} tooltip="Logout">
+                            <Power/>
+                            <span className="group-data-[collapsible=icon]:hidden">Logout</span>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton asChild tooltip="Go to App">
+                            <Link href="/">
+                                <Home/>
+                                <span className="group-data-[collapsible=icon]:hidden">Go to App</span>
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            </div>
         </SidebarContent>
-        <SidebarFooter className='p-2'>
-             <SidebarMenu className="grid grid-cols-2 gap-1">
-                <SidebarMenuItem>
-                    <SidebarMenuButton onClick={handleLogout} tooltip="Logout">
-                        <Power/>
-                        <span className="group-data-[collapsible=icon]:hidden">Logout</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                    <SidebarMenuButton asChild tooltip="Go to App">
-                        <Link href="/">
-                            <Home/>
-                            <span className="group-data-[collapsible=icon]:hidden">Go to App</span>
-                        </Link>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-             </SidebarMenu>
-        </SidebarFooter>
       </Sidebar>
       <main className="flex-1">
          <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-4 border-b bg-background px-6">
