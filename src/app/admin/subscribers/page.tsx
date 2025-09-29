@@ -56,7 +56,7 @@ const phoneSchema = z.object({
 });
 
 type PhoneFormValues = z.infer<typeof phoneSchema>;
-const SUBSCRIBERS_PER_PAGE = 5;
+const SUBSCRIBERS_PER_PAGE = 3;
 
 export default function SubscribersPage() {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
