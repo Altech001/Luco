@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { LoaderCircle, Sun, Moon, Laptop, Mail, Bell, Send, Users, ChevronsUpDown, Code, Sparkles } from 'lucide-react';
+import { LoaderCircle, Sun, Moon, Laptop, Mail, Bell, Send, Users, ChevronsUpDown, Smartphone, UserCircle, Wallet, CheckCircle, Search, RefreshCw, XCircle } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
@@ -29,14 +29,269 @@ import { getSubscribers, sendSms } from '@/lib/subscribers';
 import type { Subscriber } from '@/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { generateIntegrationCode, type GenerateIntegrationCodeOutput } from '@/ai/flows/generate-integration-code';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { v4 as uuidv4 } from 'uuid';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Badge } from '@/components/ui/badge';
 
-const integrationSchema = z.object({
-  platform: z.string().min(1, 'Please select a platform.'),
-  description: z.string().min(10, 'Please provide a detailed description.'),
+const phoneSchema = z.object({
+  phone: z.string().min(10, 'A valid phone number is required.'),
 });
-type IntegrationFormValues = z.infer<typeof integrationSchema>;
+type PhoneFormValues = z.infer<typeof phoneSchema>;
+
+const amountSchema = z.object({
+  amount: z.coerce.number().positive('Amount must be greater than 0.'),
+});
+type AmountFormValues = z.infer<typeof amountSchema>;
+
+type PaymentStep = 'idle' | 'identity' | 'amount' | 'status' | 'completed' | 'failed';
+
+const PaymentFlow = () => {
+  const { toast } = useToast();
+  const [step, setStep] = useState<PaymentStep>('idle');
+  const [isLoading, setIsLoading] = useState(false);
+  const [phone, setPhone] = useState('');
+  const [identityName, setIdentityName] = useState('');
+  const [reference, setReference] = useState('');
+  const [paymentStatus, setPaymentStatus] = useState('');
+
+  const phoneForm = useForm<PhoneFormValues>({
+    resolver: zodResolver(phoneSchema),
+    defaultValues: { phone: '' },
+  });
+
+  const amountForm = useForm<AmountFormValues>({
+    resolver: zodResolver(amountSchema),
+    defaultValues: { amount: 100 },
+  });
+
+  const handleIdentityCheck = async (values: PhoneFormValues) => {
+    setIsLoading(true);
+    setPhone(values.phone);
+    try {
+      const response = await fetch('https://lucopay.onrender.com/identity/msisdn', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'accept': 'application/json' },
+        body: JSON.stringify({ msisdn: values.phone }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setIdentityName(data.identityname);
+        setStep('amount');
+        toast({ title: 'Identity Verified', description: `Welcome, ${data.identityname}!` });
+      } else {
+        toast({ variant: 'destructive', title: 'Verification Failed', description: data.message });
+      }
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not connect to the identity service.' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePaymentRequest = async (values: AmountFormValues) => {
+    setIsLoading(true);
+    const uniqueReference = uuidv4();
+    setReference(uniqueReference);
+    try {
+      const response = await fetch('https://lucopay.onrender.com/api/v1/request_payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'accept': 'application/json' },
+        body: JSON.stringify({
+          amount: values.amount.toString(),
+          number: phone.replace('+', ''),
+          refer: uniqueReference,
+        }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setStep('status');
+        toast({ title: 'Payment Initiated', description: 'Checking transaction status...' });
+        // Start polling for status
+        pollPaymentStatus(uniqueReference);
+      } else {
+        toast({ variant: 'destructive', title: 'Payment Failed', description: data.message });
+        setStep('failed');
+      }
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not connect to the payment service.' });
+       setStep('failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const pollPaymentStatus = async (ref: string) => {
+    let attempts = 0;
+    const maxAttempts = 10;
+    const interval = 3000; // 3 seconds
+
+    const check = async () => {
+      if (attempts >= maxAttempts) {
+        setPaymentStatus('timeout');
+        setStep('failed');
+        toast({ variant: 'destructive', title: 'Status Check Timed Out', description: 'Could not get payment status in time.' });
+        return;
+      }
+      attempts++;
+      try {
+        const response = await fetch('https://lucopay.onrender.com/api/v1/payment_webhook', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'accept': 'application/json' },
+          body: JSON.stringify({ reference: ref }),
+        });
+        const data = await response.json();
+
+        if (data.status === 'succeeded') {
+          setPaymentStatus('succeeded');
+          setStep('completed');
+          toast({ title: 'Payment Successful!', className: 'bg-green-500 text-white' });
+        } else if (data.status === 'failed') {
+          setPaymentStatus('failed');
+          setStep('failed');
+          toast({ variant: 'destructive', title: 'Payment Failed', description: 'The transaction was not successful.' });
+        } else {
+          // If pending, try again
+          setTimeout(check, interval);
+        }
+      } catch (err) {
+        setPaymentStatus('error');
+        setStep('failed');
+        toast({ variant: 'destructive', title: 'Status Check Error', description: 'Could not retrieve payment status.' });
+      }
+    };
+    // Initial check
+    setTimeout(check, interval);
+  };
+  
+  const resetFlow = () => {
+    setStep('idle');
+    setPhone('');
+    setIdentityName('');
+    setReference('');
+    setPaymentStatus('');
+    phoneForm.reset();
+    amountForm.reset({ amount: 100 });
+  }
+
+  const renderContent = () => {
+    switch (step) {
+      case 'idle':
+        return (
+          <Form {...phoneForm}>
+            <form onSubmit={phoneForm.handleSubmit(handleIdentityCheck)} className="space-y-4">
+              <FormField
+                control={phoneForm.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input placeholder="+256..." {...field} className="pl-10" />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button type="submit" disabled={isLoading} className="w-full">
+                {isLoading ? <LoaderCircle className="animate-spin" /> : <Search className="mr-2" />}
+                Verify Identity
+              </Button>
+            </form>
+          </Form>
+        );
+      case 'amount':
+        return (
+           <Form {...amountForm}>
+            <form onSubmit={amountForm.handleSubmit(handlePaymentRequest)} className="space-y-4">
+                <div className="flex items-center gap-3 rounded-md border p-3">
+                    <UserCircle className="h-5 w-5 text-muted-foreground"/>
+                    <p className="text-sm font-medium">{identityName}</p>
+                </div>
+                <FormField
+                control={amountForm.control}
+                name="amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Amount</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input type="number" placeholder="100" {...field} className="pl-10" />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button type="submit" disabled={isLoading} className="w-full">
+                {isLoading ? <LoaderCircle className="animate-spin" /> : <Send className="mr-2" />}
+                Request Payment
+              </Button>
+            </form>
+          </Form>
+        )
+      case 'status':
+        return (
+            <div className="flex flex-col items-center justify-center gap-4 text-center">
+                <LoaderCircle className="h-10 w-10 animate-spin text-primary" />
+                <h3 className="font-semibold">Processing Payment...</h3>
+                <p className="text-sm text-muted-foreground">Please wait while we confirm your transaction. Do not close this window.</p>
+                <p className="text-xs text-muted-foreground/80 pt-2">Ref: {reference}</p>
+            </div>
+        )
+      case 'completed':
+         return (
+            <div className="flex flex-col items-center justify-center gap-4 text-center">
+                <CheckCircle className="h-12 w-12 text-green-500" />
+                <h3 className="font-semibold text-lg">Payment Successful</h3>
+                <Badge variant="secondary">Status: {paymentStatus}</Badge>
+                <p className="text-sm text-muted-foreground">The transaction was completed successfully.</p>
+                <Button onClick={resetFlow} className="mt-4 w-full">Start New Payment</Button>
+            </div>
+        )
+      case 'failed':
+         return (
+            <div className="flex flex-col items-center justify-center gap-4 text-center">
+                <XCircle className="h-12 w-12 text-destructive" />
+                <h3 className="font-semibold text-lg">Payment Failed</h3>
+                <Badge variant="destructive">Status: {paymentStatus}</Badge>
+                <p className="text-sm text-muted-foreground">Something went wrong. Please try again.</p>
+                <Button onClick={resetFlow} className="mt-4 w-full">Try Again</Button>
+            </div>
+        )
+      default:
+        return null;
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Test Payment Flow</CardTitle>
+        <CardDescription>
+          Step through the payment process using the LucoPay API.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <AnimatePresence mode="wait">
+            <motion.div
+                key={step}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.2 }}
+            >
+                {renderContent()}
+            </motion.div>
+        </AnimatePresence>
+      </CardContent>
+    </Card>
+  );
+};
+
 
 export default function SettingsPage() {
   const { toast } = useToast();
@@ -46,15 +301,6 @@ export default function SettingsPage() {
   const [isRecipientsOpen, setIsRecipientsOpen] = useState(false);
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [isSmsEnabled, setIsSmsEnabled] = useState(false);
-  const [integrationResult, setIntegrationResult] = useState<GenerateIntegrationCodeOutput | null>(null);
-
-  const integrationForm = useForm<IntegrationFormValues>({
-    resolver: zodResolver(integrationSchema),
-    defaultValues: {
-      platform: 'JavaScript',
-      description: '',
-    },
-  });
 
   const smsForm = useForm<{ message: string }>({
     resolver: zodResolver(z.object({ message: z.string().min(1, 'Message cannot be empty.') })),
@@ -75,24 +321,6 @@ export default function SettingsPage() {
       fetchSubscribers();
     }
   }, [isSmsDialogOpen, toast]);
-
-  const handleIntegrationSubmit = async (values: IntegrationFormValues) => {
-    setIsSubmitting(true);
-    setIntegrationResult(null);
-    try {
-      const result = await generateIntegrationCode(values);
-      setIntegrationResult(result);
-      toast({
-        title: 'Code Generated!',
-        description: `Integration snippet for ${values.platform} is ready.`,
-      });
-    } catch (error) {
-      console.error('Error generating integration code:', error);
-      toast({ variant: 'destructive', title: 'Generation Failed', description: 'Could not generate the integration code.' });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
   
   const handleSmsToggle = (checked: boolean) => {
     setIsSmsEnabled(checked);
@@ -128,79 +356,7 @@ export default function SettingsPage() {
       </div>
       
       <div className="grid gap-8 md:grid-cols-2">
-        <Card>
-            <CardHeader>
-                <CardTitle>Integration Code Generator</CardTitle>
-                <CardDescription>
-                    Use AI to generate payment integration code for your platform.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Form {...integrationForm}>
-                    <form onSubmit={integrationForm.handleSubmit(handleIntegrationSubmit)} className="space-y-4">
-                       <FormField
-                          control={integrationForm.control}
-                          name="platform"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Platform</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select a language or platform" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="JavaScript">JavaScript</SelectItem>
-                                  <SelectItem value="Python">Python</SelectItem>
-                                  <SelectItem value="React">React</SelectItem>
-                                  <SelectItem value="cURL">cURL</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                        control={integrationForm.control}
-                        name="description"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>What do you want to achieve?</FormLabel>
-                            <FormControl>
-                                <Textarea
-                                    placeholder="e.g., 'A function to verify a user and then request a payment of 5000.'"
-                                    className="resize-none"
-                                    rows={3}
-                                    {...field}
-                                />
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                        />
-                        <Button type="submit" disabled={isSubmitting}>
-                        {isSubmitting ? <LoaderCircle className="animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                         Generate Code
-                        </Button>
-                    </form>
-                </Form>
-                 {integrationResult && (
-                  <div className="mt-6 space-y-4">
-                      <div>
-                          <h3 className="font-semibold mb-2 flex items-center gap-2"><Code className="h-5 w-5"/> Code Snippet</h3>
-                          <pre className="p-4 rounded-md bg-muted text-sm overflow-x-auto">
-                              <code>{integrationResult.codeSnippet}</code>
-                          </pre>
-                      </div>
-                      <div>
-                          <h3 className="font-semibold mb-2">Explanation</h3>
-                          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{integrationResult.explanation}</p>
-                      </div>
-                  </div>
-                )}
-            </CardContent>
-        </Card>
+        <PaymentFlow />
         <Card>
             <CardHeader>
                 <CardTitle>Theme Settings</CardTitle>
@@ -277,17 +433,19 @@ export default function SettingsPage() {
                  <Collapsible
                     open={isRecipientsOpen}
                     onOpenChange={setIsRecipientsOpen}
-                    className="space-y-2"
+                    className="w-full space-y-2"
                     >
-                    <CollapsibleTrigger asChild>
-                        <Button variant="ghost" className="w-full justify-between px-2">
-                         <div className="flex items-center gap-2 text-muted-foreground">
-                            <Users className="h-4 w-4"/> 
-                            <span className="font-medium">Recipients ({subscribers.length})</span>
-                         </div>
-                        <ChevronsUpDown className="h-4 w-4" />
-                        </Button>
-                    </CollapsibleTrigger>
+                     <div className="flex items-center justify-between space-x-4">
+                        <h4 className="text-sm font-semibold">
+                            Recipients ({subscribers.length})
+                        </h4>
+                        <CollapsibleTrigger asChild>
+                            <Button variant="ghost" size="sm" className="w-9 p-0">
+                                <ChevronsUpDown className="h-4 w-4" />
+                                <span className="sr-only">Toggle</span>
+                            </Button>
+                        </CollapsibleTrigger>
+                    </div>
                     <CollapsibleContent>
                         <ScrollArea className="h-40 w-full rounded-md border">
                             <div className="p-4 text-sm">
