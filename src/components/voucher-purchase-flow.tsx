@@ -10,7 +10,6 @@ import { Smartphone, KeyRound, LoaderCircle, TicketIcon, Bot, CheckCircle } from
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import type { Voucher } from '@/types';
 import { Badge } from './ui/badge';
@@ -93,10 +92,10 @@ export default function VoucherPurchaseFlow({ voucher, onComplete }: VoucherPurc
       case 'enter-phone':
         return (
           <MotionDiv initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <DialogHeader>
-              <DialogTitle>Confirm Purchase</DialogTitle>
-              <DialogDescription>Enter your phone number to purchase the "{voucher.title}" voucher for {formattedPrice}.</DialogDescription>
-            </DialogHeader>
+            <div className="flex flex-col space-y-1.5 text-center sm:text-left mb-4">
+              <h2 className="text-lg font-semibold leading-none tracking-tight">Confirm Purchase</h2>
+              <p className="text-sm text-muted-foreground">Enter your phone number to purchase the "{voucher.title}" voucher for {formattedPrice}.</p>
+            </div>
             <Form {...phoneForm}>
               <form onSubmit={phoneForm.handleSubmit(handlePhoneSubmit)} className="space-y-6 pt-4">
                 <FormField
@@ -127,12 +126,12 @@ export default function VoucherPurchaseFlow({ voucher, onComplete }: VoucherPurc
       case 'verify-phone':
         return (
           <MotionDiv initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }}>
-            <DialogHeader>
-              <DialogTitle>Verify Your Number</DialogTitle>
-              <DialogDescription>
+            <div className="flex flex-col space-y-1.5 text-center sm:text-left mb-4">
+              <h2 className="text-lg font-semibold leading-none tracking-tight">Verify Your Number</h2>
+              <p className="text-sm text-muted-foreground">
                 Enter the 6-digit code sent to <span className="font-semibold text-foreground">{phoneNumber}</span>.
-              </DialogDescription>
-            </DialogHeader>
+              </p>
+            </div>
             <Form {...codeForm}>
               <form onSubmit={codeForm.handleSubmit(handleVerificationSubmit)} className="space-y-6 pt-4">
                  <FormField
@@ -164,10 +163,10 @@ export default function VoucherPurchaseFlow({ voucher, onComplete }: VoucherPurc
       case 'receipt':
         return (
           <MotionDiv initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <DialogHeader>
-              <DialogTitle>Purchase Complete!</DialogTitle>
-              <DialogDescription>Here is your voucher. Present this code at the store.</DialogDescription>
-            </DialogHeader>
+            <div className="flex flex-col space-y-1.5 text-center sm:text-left mb-4">
+              <h2 className="text-lg font-semibold leading-none tracking-tight">Purchase Complete!</h2>
+              <p className="text-sm text-muted-foreground">Here is your voucher. Present this code at the store.</p>
+            </div>
             <div className="py-6">
                 <div className="relative flex min-h-[160px] w-full rounded-lg border bg-card text-card-foreground shadow-md">
                     <div className="relative w-2/3 p-4">
