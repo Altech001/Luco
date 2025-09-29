@@ -58,18 +58,6 @@ export default function AdminAuth({ onLoginSuccess }: AdminAuthProps) {
     }, 1000);
   };
 
-   const handleCreateDefaultAdmin = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-        toast({
-          title: 'Default Admin Created',
-          description: 'You can now log in with username "admin" and password "password".',
-        });
-        setIsLoading(false);
-    }, 1000)
-  };
-
-
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-background p-4">
        <div className="absolute top-4 right-4">
@@ -127,21 +115,6 @@ export default function AdminAuth({ onLoginSuccess }: AdminAuthProps) {
             </form>
           </Form>
         </CardContent>
-        <CardFooter className="flex flex-col gap-4">
-            <div className="relative w-full">
-                <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">
-                    First time setup
-                    </span>
-                </div>
-            </div>
-            <Button variant="outline" className="w-full" onClick={handleCreateDefaultAdmin} disabled={isLoading}>
-                 {isLoading ? <LoaderCircle className="animate-spin" /> : 'Create Default Admin'}
-            </Button>
-        </CardFooter>
       </Card>
     </div>
   );
