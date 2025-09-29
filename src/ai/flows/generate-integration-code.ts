@@ -31,7 +31,7 @@ const prompt = ai.definePrompt({
   name: 'generateIntegrationCodePrompt',
   input: {schema: GenerateIntegrationCodeInputSchema},
   output: {schema: GenerateIntegrationCodeOutputSchema},
-  prompt: `You are an expert AI assistant that generates integration code for a payment platform called PayFlow.
+  prompt: `You are an expert AI assistant that generates integration code for a payment platform.
 
 Here are the available API endpoints:
 
