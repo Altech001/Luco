@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { getPersonalizedVoucherRecommendations } from '@/ai/flows/personalized-voucher-recommendations';
 import { purchaseHistory, voucherCategories } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import MembershipAuth from './membership-auth';
 
 type PersonalizedVouchersProps = {
   onRecommendations: (ids: string[]) => void;
@@ -14,6 +16,7 @@ type PersonalizedVouchersProps = {
 
 export default function PersonalizedVouchers({ onRecommendations }: PersonalizedVouchersProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
   const { toast } = useToast();
 
   const handleGenerate = async () => {
@@ -43,7 +46,7 @@ export default function PersonalizedVouchers({ onRecommendations }: Personalized
   return (
     <Card className="bg-gradient-to-br from-accent/40 to-background">
       <CardHeader>
-        <CardTitle className="font-headline flex items-center gap-2">
+        <CardTitle className="font-headline flex items-center gap-2 text-2xl sm:text-3xl">
           <Sparkles className="h-6 w-6 text-[hsl(var(--highlight))]" />
           <span>For You</span>
         </CardTitle>
@@ -52,8 +55,8 @@ export default function PersonalizedVouchers({ onRecommendations }: Personalized
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-wrap gap-4">
-          <Button onClick={handleGenerate} disabled={isLoading}>
+        <div className="flex flex-col gap-4 sm:flex-row">
+          <Button onClick={handleGenerate} disabled={isLoading} className="w-full sm:w-auto">
             {isLoading ? (
               <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
             ) : (
@@ -61,10 +64,17 @@ export default function PersonalizedVouchers({ onRecommendations }: Personalized
             )}
             {isLoading ? 'Analyzing...' : 'Get My Recommendations'}
           </Button>
-          <Button variant="outline">
-            <Star className="mr-2 h-4 w-4" />
-            Become a Member
-          </Button>
+          <Dialog open={isAuthOpen} onOpenChange={setIsAuthOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="w-full sm:w-auto">
+                <Star className="mr-2 h-4 w-4" />
+                Become a Member
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-[400px] w-[90vw] rounded-lg">
+              <MembershipAuth onComplete={() => setIsAuthOpen(false)} />
+            </DialogContent>
+          </Dialog>
         </div>
       </CardContent>
     </Card>
