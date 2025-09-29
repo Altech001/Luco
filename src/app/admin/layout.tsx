@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { LayoutDashboard, Ticket, Users, BarChart, Settings, Home, TicketPercent, Menu, LoaderCircle, Image as ImageIcon, Bell, FileText, Search, SlidersHorizontal, Link2, Landmark, Printer, MessageSquare, Cookie, Server, Broom, Power } from 'lucide-react';
+import { LayoutDashboard, Ticket, Users, BarChart, Settings, Home, TicketPercent, Menu, LoaderCircle, Image as ImageIcon, Bell, FileText, Search, SlidersHorizontal, Link2, Landmark, Printer, MessageSquare, Cookie, Server, Eraser, Power } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/theme-toggle';
 import AdminAuth from '@/components/admin-auth';
@@ -74,7 +74,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           items: [
               { href: '#', label: 'GDPR Cookie', icon: Cookie },
               { href: '#', label: 'Server Info', icon: Server },
-              { href: '#', label: 'Clear Cache', icon: Broom },
+              { href: '#', label: 'Clear Cache', icon: Eraser },
           ]
       }
   ]
