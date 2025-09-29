@@ -2,7 +2,8 @@
 'use client';
 
 import * as React from 'react';
-import { Bell, TicketPercent, MessageSquare } from 'lucide-react';
+import Link from 'next/link';
+import { Bell, TicketPercent, MessageSquare, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -80,6 +81,12 @@ export default function Header() {
               </form>
             </DialogContent>
           </Dialog>
+          <Link href="/admin">
+            <Button variant="outline" size="icon">
+              <User className="h-4 w-4" />
+              <span className="sr-only">Admin</span>
+            </Button>
+          </Link>
         </div>
       </div>
     </header>
