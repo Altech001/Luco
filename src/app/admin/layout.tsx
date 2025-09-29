@@ -63,13 +63,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           ]
       },
       {
-          label: '-- Notification',
-          items: [
-            { href: '#', label: 'Push Notification', icon: Bell },
-            { href: '#', label: 'Contact Messages', icon: MessageSquare },
-          ]
-      },
-      {
           label: '-- Bonus',
           items: [
               { href: '#', label: 'GDPR Cookie', icon: Cookie },
