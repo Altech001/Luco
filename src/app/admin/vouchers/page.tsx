@@ -62,6 +62,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, addDays } from 'date-fns';
+import { Badge } from '@/components/ui/badge';
 
 const voucherSchema = z.object({
   title: z.string().min(1, 'Title is required.'),
