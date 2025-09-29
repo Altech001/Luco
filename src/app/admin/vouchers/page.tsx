@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -19,10 +19,11 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, LoaderCircle, MoreHorizontal, Pencil, Trash2, Ticket, Tag, Calendar, DollarSign, Percent, FileText, Upload } from 'lucide-react';
+import { PlusCircle, LoaderCircle, MoreHorizontal, Pencil, Trash2, Ticket, Tag, Calendar, DollarSign, Percent, FileText, Upload, ArrowLeft } from 'lucide-react';
 import { Switch } from "@/components/ui/switch"
 import type { Voucher, VoucherProfile } from '@/types';
 import { getVouchers, addVoucher, updateVoucher, deleteVoucher, batchAddVouchers, getVoucherProfiles } from '@/lib/vouchers';
+import { voucherCategoriesData } from '@/lib/data';
 import {
   Dialog,
   DialogContent,
@@ -60,7 +61,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format, parse, addDays } from 'date-fns';
+import { format, addDays } from 'date-fns';
 
 const voucherSchema = z.object({
   title: z.string().min(1, 'Title is required.'),
@@ -209,7 +210,7 @@ function VoucherForm({
                 <FormLabel>Expiry Date</FormLabel>
                  <FormControl>
                     <div className="relative">
-                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Calendar className="absolute left-3 top-1/_2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input placeholder="e.g., 24 Dec 2024" {...field} className="pl-10" />
                     </div>
                 </FormControl>
@@ -352,6 +353,8 @@ export default function VouchersPage() {
   const [isAddEditDialogOpen, setIsAddEditDialogOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(null);
+  const [view, setView] = useState<'grid' | 'table'>('grid');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchData = async () => {
@@ -389,13 +392,13 @@ export default function VouchersPage() {
   const handleSubmit = async (values: VoucherFormValues) => {
     setIsSubmitting(true);
     try {
-        if (selectedVoucher) { // Update existing voucher
+        if (selectedVoucher) {
             await updateVoucher(selectedVoucher.id, values);
              toast({
                 title: 'Voucher Updated',
                 description: 'The voucher has been successfully updated.',
             });
-        } else { // Add new voucher
+        } else {
             await addVoucher(values);
             toast({
                 title: 'Voucher Added',
@@ -498,7 +501,25 @@ export default function VouchersPage() {
     minimumFractionDigits: 0,
   }).format(price);
 
-  return (
+  const vouchersByCategory = useMemo(() => {
+    return vouchers.reduce((acc, voucher) => {
+      const category = voucher.category;
+      if (!acc[category]) {
+        acc[category] = [];
+      }
+      acc[category].push(voucher);
+      return acc;
+    }, {} as Record<string, Voucher[]>);
+  }, [vouchers]);
+
+  const handleCategoryClick = (categoryName: string) => {
+    setSelectedCategory(categoryName);
+    setView('table');
+  };
+
+  const currentVouchers = selectedCategory ? vouchersByCategory[selectedCategory] || [] : [];
+
+  const renderGridView = () => (
     <>
       <div className="flex items-center justify-between gap-2">
         <h1 className="text-3xl font-bold">Manage Vouchers</h1>
@@ -511,10 +532,67 @@ export default function VouchersPage() {
           </Button>
         </div>
       </div>
-      <Card className="mt-8">
+       <Card className="mt-8">
+        <CardHeader>
+          <CardTitle>Voucher Categories</CardTitle>
+          <CardDescription>Select a category to view and manage its vouchers.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+             <div className="flex items-center justify-center py-20">
+              <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {voucherCategoriesData.map(category => {
+                const categoryVouchers = vouchersByCategory[category.name] || [];
+                const CategoryIcon = category.icon;
+                return (
+                  <Card 
+                    key={category.name}
+                    className="cursor-pointer hover:shadow-lg transition-shadow"
+                    onClick={() => handleCategoryClick(category.name)}
+                  >
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">{category.name}</CardTitle>
+                      <CategoryIcon className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{categoryVouchers.length}</div>
+                      <p className="text-xs text-muted-foreground">Vouchers</p>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+          )}
+        </CardContent>
+       </Card>
+    </>
+  );
+
+  const renderTableView = () => (
+    <>
+       <div className="flex items-center justify-between gap-2">
+        <div className='flex items-center gap-4'>
+           <Button variant="outline" size="icon" onClick={() => setView('grid')}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h1 className="text-3xl font-bold">{selectedCategory} Vouchers</h1>
+        </div>
+        <div className="flex gap-2">
+           <Button variant="outline" onClick={() => setIsImportOpen(true)}>
+            <Upload className="mr-2 h-4 w-4" /> Import
+          </Button>
+          <Button onClick={() => setIsAddEditDialogOpen(true)}>
+            <PlusCircle className="mr-2 h-4 w-4" /> Add Voucher
+          </Button>
+        </div>
+      </div>
+       <Card className="mt-8">
         <CardHeader>
           <CardTitle>Voucher List</CardTitle>
-          <CardDescription>Here are all the vouchers currently in your system.</CardDescription>
+          <CardDescription>Here are all the vouchers for the {selectedCategory} category.</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -527,22 +605,22 @@ export default function VouchersPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Title</TableHead>
-                    <TableHead>Category</TableHead>
                     <TableHead>Price</TableHead>
                     <TableHead>Expires</TableHead>
+                    <TableHead>Code</TableHead>
                     <TableHead>
                       <span className="sr-only">Actions</span>
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {vouchers.length > 0 ? (
-                    vouchers.map((voucher) => (
+                  {currentVouchers.length > 0 ? (
+                    currentVouchers.map((voucher) => (
                       <TableRow key={voucher.id}>
                         <TableCell className="font-medium">{voucher.title}</TableCell>
-                        <TableCell>{voucher.category}</TableCell>
                         <TableCell>{formattedPrice(voucher.price)}</TableCell>
                         <TableCell>{voucher.expiryDate}</TableCell>
+                        <TableCell><Badge variant="outline">{voucher.code}</Badge></TableCell>
                         <TableCell>
                            <AlertDialog>
                             <DropdownMenu>
@@ -588,7 +666,7 @@ export default function VouchersPage() {
                   ) : (
                     <TableRow>
                       <TableCell colSpan={5} className="h-24 text-center">
-                        No vouchers found. Click "Add Voucher" to create one.
+                        No vouchers found for this category.
                       </TableCell>
                     </TableRow>
                   )}
@@ -598,6 +676,13 @@ export default function VouchersPage() {
           )}
         </CardContent>
       </Card>
+    </>
+  );
+
+
+  return (
+    <>
+      {view === 'grid' ? renderGridView() : renderTableView()}
       
        <Dialog open={isAddEditDialogOpen} onOpenChange={handleDialogChange}>
           <DialogContent className="sm:max-w-md">
@@ -630,3 +715,5 @@ export default function VouchersPage() {
     </>
   );
 }
+
+    
