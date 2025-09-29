@@ -11,6 +11,7 @@ export type Voucher = {
   discount: string;
   code: string;
   expiryDate: string;
+  price: number;
   isNew?: boolean;
 };
 

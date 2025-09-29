@@ -19,9 +19,15 @@ export default function VoucherCard({ voucher, isHighlighted = false }: VoucherC
     navigator.clipboard.writeText(voucher.code);
     toast({
       title: 'Code Copied!',
-      description: `${voucher.code} is now in your clipboard.`,
+      description: `Voucher code is now in your clipboard.`,
     });
   };
+
+  const formattedPrice = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'UGX',
+    minimumFractionDigits: 0,
+  }).format(voucher.price);
 
   return (
     <Card
@@ -30,7 +36,7 @@ export default function VoucherCard({ voucher, isHighlighted = false }: VoucherC
         isHighlighted && 'shadow-lg ring-2 ring-offset-2 ring-[hsl(var(--highlight))]'
       )}
     >
-      <div className="relative flex min-h-[140px] text-card-foreground">
+      <div className="relative flex min-h-[160px] text-card-foreground">
         {voucher.isNew && (
           <Badge
             className="absolute -right-2 -top-2 z-10 animate-pulse bg-[hsl(var(--highlight))] text-[hsl(var(--highlight-foreground))] border-transparent"
@@ -56,13 +62,13 @@ export default function VoucherCard({ voucher, isHighlighted = false }: VoucherC
         <div className="relative w-1/3 rounded-r-lg border-l-2 border-dashed bg-accent/30 dark:bg-accent/10 p-2 sm:p-4">
           <div className="absolute top-1/2 -left-[13px] -translate-y-1/2 h-6 w-6 rounded-full bg-background dark:bg-background"></div>
           <div className="flex h-full flex-col items-center justify-center text-center">
+             <p className="text-sm font-bold text-foreground/90">{formattedPrice}</p>
             <p className="text-xl sm:text-2xl font-bold text-[hsl(var(--highlight))]">{voucher.discount}</p>
             <p className="text-[10px] sm:text-xs font-semibold uppercase text-accent-foreground/80">Discount</p>
             <div className="mt-1 sm:mt-2 space-y-1">
-              <p className="text-xs font-semibold tracking-wider text-primary">{voucher.code}</p>
-               <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleCopyCode}>
-                <Copy className="h-3.5 w-3.5" />
-                <span className="sr-only">Copy code</span>
+               <Button variant="ghost" size="sm" className="h-auto px-2 py-1 text-xs" onClick={handleCopyCode}>
+                <Copy className="h-3 w-3 mr-1" />
+                Copy Code
               </Button>
             </div>
           </div>
