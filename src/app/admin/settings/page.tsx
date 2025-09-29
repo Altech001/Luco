@@ -35,7 +35,7 @@ import { verifyIdentity, requestPayment, checkPaymentStatus } from '@/lib/paymen
 
 
 const phoneSchema = z.object({
-  phone: z.string().min(10, 'A valid phone number is required.'),
+  phone: z.string().min(1, 'A valid phone number is required.'),
 });
 type PhoneFormValues = z.infer<typeof phoneSchema>;
 
@@ -65,12 +65,34 @@ const PaymentFlow = () => {
     resolver: zodResolver(amountSchema),
     defaultValues: { amount: 100, reference: '' },
   });
+  
+  const formatPhoneNumber = (input: string): string => {
+    const digitsOnly = input.replace(/\D/g, '');
+
+    if (digitsOnly.startsWith('07') && (digitsOnly.length === 10)) {
+        return `+256${digitsOnly.substring(1)}`;
+    }
+    if (digitsOnly.startsWith('7') && (digitsOnly.length === 9)) {
+        return `+256${digitsOnly}`;
+    }
+    if (digitsOnly.startsWith('256') && (digitsOnly.length === 12)) {
+        return `+${digitsOnly}`;
+    }
+    if (digitsOnly.length === 9) { // Assumes it's a number like 7...
+        return `+256${digitsOnly}`;
+    }
+    
+    // Return original input if no specific format matches, prepending with + if needed
+    return input.startsWith('+') ? input : `+${input}`;
+  };
 
   const handleIdentityCheck = async (values: PhoneFormValues) => {
     setIsLoading(true);
-    setPhone(values.phone);
+    const formattedPhone = formatPhoneNumber(values.phone);
+    setPhone(formattedPhone);
+
     try {
-      const result = await verifyIdentity(values.phone);
+      const result = await verifyIdentity(formattedPhone);
       if (result.success && result.identityName) {
         setIdentityName(result.identityName);
         setStep('amount');
@@ -500,5 +522,7 @@ export default function SettingsPage() {
     </>
   );
 }
+
+    
 
     
