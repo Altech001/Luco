@@ -64,7 +64,7 @@ export default function AdminAuth({ onLoginSuccess }: AdminAuthProps) {
        <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>
-      <Card className="w-full max-w-sm rounded-none">
+      <Card className="w-full max-w-sm rounded-lg">
         <CardHeader className="text-center">
             <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2">
                 <TicketPercent className="h-8 w-8 text-[hsl(var(--highlight))]" />
