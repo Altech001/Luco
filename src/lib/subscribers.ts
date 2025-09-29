@@ -1,5 +1,5 @@
 
-import { collection, getDocs, query, orderBy, addDoc, where, Timestamp, limit, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, addDoc, where, Timestamp, limit, doc, deleteDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Subscriber } from '@/types';
 
@@ -48,3 +48,14 @@ export async function deleteSubscriber(id: string): Promise<void> {
   const subscriberRef = doc(db, 'subscribers', id);
   await deleteDoc(subscriberRef);
 }
+
+export async function batchDeleteSubscribers(subscriberIds: string[]): Promise<void> {
+  const batch = writeBatch(db);
+  subscriberIds.forEach(id => {
+    const subscriberRef = doc(db, 'subscribers', id);
+    batch.delete(subscriberRef);
+  });
+  await batch.commit();
+}
+
+    

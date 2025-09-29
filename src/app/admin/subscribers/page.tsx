@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Download, Upload, LoaderCircle, MoreHorizontal, Pencil, Trash2, Smartphone } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
-import { getSubscribers, deleteSubscriber, updateSubscriber } from '@/lib/subscribers';
+import { getSubscribers, deleteSubscriber, updateSubscriber, batchDeleteSubscribers } from '@/lib/subscribers';
 import type { Subscriber } from '@/types';
 import {
   Table,
@@ -50,6 +50,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
 import Papa from 'papaparse';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const phoneSchema = z.object({
   phone: z.string().min(10, 'Please enter a valid phone number.'),
@@ -64,6 +65,7 @@ export default function SubscribersPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedSubscriber, setSelectedSubscriber] = useState<Subscriber | null>(null);
+  const [selectedSubscribers, setSelectedSubscribers] = useState<string[]>([]);
   const { toast } = useToast();
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -97,6 +99,10 @@ export default function SubscribersPage() {
       form.setValue('phone', selectedSubscriber.phone);
     }
   }, [selectedSubscriber, form]);
+
+  useEffect(() => {
+    setSelectedSubscribers([]);
+  }, [currentPage]);
 
   const handleExport = () => {
     const csv = Papa.unparse(subscribers.map(s => ({
@@ -158,11 +164,49 @@ export default function SubscribersPage() {
     }
   };
 
+  const handleBatchDelete = async () => {
+    setIsSubmitting(true);
+    try {
+      await batchDeleteSubscribers(selectedSubscribers);
+      toast({
+        title: 'Subscribers Deleted',
+        description: `${selectedSubscribers.length} subscribers have been removed.`,
+      });
+      setSelectedSubscribers([]);
+      fetchSubscribers();
+    } catch (error) {
+      console.error('Error deleting subscribers:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Delete Failed',
+        description: 'Could not delete the selected subscribers.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const totalPages = Math.ceil(subscribers.length / SUBSCRIBERS_PER_PAGE);
   const paginatedSubscribers = subscribers.slice(
     (currentPage - 1) * SUBSCRIBERS_PER_PAGE,
     currentPage * SUBSCRIBERS_PER_PAGE
   );
+  
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedSubscribers(paginatedSubscribers.map(s => s.id));
+    } else {
+      setSelectedSubscribers([]);
+    }
+  };
+
+  const handleRowSelect = (subscriberId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedSubscribers(prev => [...prev, subscriberId]);
+    } else {
+      setSelectedSubscribers(prev => prev.filter(id => id !== subscriberId));
+    }
+  };
 
   return (
     <>
@@ -177,114 +221,156 @@ export default function SubscribersPage() {
           </Button>
         </div>
       </div>
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle>Subscriber List</CardTitle>
-          <CardDescription>
-            Here are all the users subscribed to your notifications.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-           {isLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : (
-            <>
-             <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Phone Number</TableHead>
-                    <TableHead>Subscribed On</TableHead>
-                    <TableHead><span className="sr-only">Actions</span></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedSubscribers.length > 0 ? (
-                    paginatedSubscribers.map((subscriber) => (
-                      <TableRow key={subscriber.id}>
-                        <TableCell className="font-medium">{subscriber.phone}</TableCell>
-                        <TableCell>{format(subscriber.subscribedAt, 'PPP p')}</TableCell>
-                        <TableCell>
-                          <AlertDialog>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button aria-haspopup="true" size="icon" variant="ghost">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                  <span className="sr-only">Toggle menu</span>
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                  <DropdownMenuItem onSelect={() => {
-                                    setSelectedSubscriber(subscriber);
-                                    setIsEditDialogOpen(true);
-                                  }}>
-                                    <Pencil className="mr-2 h-4 w-4" /> Edit
-                                  </DropdownMenuItem>
-                                <AlertDialogTrigger asChild>
-                                  <DropdownMenuItem className="text-destructive focus:text-destructive">
-                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                  </DropdownMenuItem>
-                                </AlertDialogTrigger>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This action cannot be undone. This will permanently delete the subscriber.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDelete(subscriber.id)}>
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
+       <AlertDialog>
+        <Card className="mt-8">
+            <CardHeader>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <CardTitle>Subscriber List</CardTitle>
+                        <CardDescription>
+                            Here are all the users subscribed to your notifications.
+                        </CardDescription>
+                    </div>
+                    {selectedSubscribers.length > 0 && (
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive" disabled={isSubmitting}>
+                                {isSubmitting ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                                Delete ({selectedSubscribers.length})
+                            </Button>
+                        </AlertDialogTrigger>
+                    )}
+                </div>
+            </CardHeader>
+            <CardContent>
+            {isLoading ? (
+                <div className="flex items-center justify-center py-20">
+                <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            ) : (
+                <>
+                <div className="rounded-md border">
+                <Table>
+                    <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={3} className="h-24 text-center">
-                        No subscribers found.
-                      </TableCell>
+                        <TableHead padding="checkbox" className="w-12">
+                          <Checkbox
+                            checked={selectedSubscribers.length > 0 && paginatedSubscribers.length > 0 && selectedSubscribers.length === paginatedSubscribers.length}
+                            onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                            aria-label="Select all"
+                          />
+                        </TableHead>
+                        <TableHead>Phone Number</TableHead>
+                        <TableHead>Subscribed On</TableHead>
+                        <TableHead><span className="sr-only">Actions</span></TableHead>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-             <div className="flex items-center justify-between pt-4">
-                <div className="text-sm text-muted-foreground">
-                    Page {totalPages > 0 ? currentPage : 0} of {totalPages}
+                    </TableHeader>
+                    <TableBody>
+                    {paginatedSubscribers.length > 0 ? (
+                        paginatedSubscribers.map((subscriber) => (
+                        <TableRow key={subscriber.id} data-state={selectedSubscribers.includes(subscriber.id) && "selected"}>
+                           <TableCell padding="checkbox">
+                              <Checkbox
+                                checked={selectedSubscribers.includes(subscriber.id)}
+                                onCheckedChange={(checked) => handleRowSelect(subscriber.id, checked as boolean)}
+                                aria-label="Select row"
+                              />
+                            </TableCell>
+                            <TableCell className="font-medium">{subscriber.phone}</TableCell>
+                            <TableCell>{format(subscriber.subscribedAt, 'PPP p')}</TableCell>
+                            <TableCell>
+                            <AlertDialog>
+                                <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button aria-haspopup="true" size="icon" variant="ghost">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                    <span className="sr-only">Toggle menu</span>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                    <DropdownMenuItem onSelect={() => {
+                                        setSelectedSubscriber(subscriber);
+                                        setIsEditDialogOpen(true);
+                                    }}>
+                                        <Pencil className="mr-2 h-4 w-4" /> Edit
+                                    </DropdownMenuItem>
+                                    <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem className="text-destructive focus:text-destructive">
+                                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                    </DropdownMenuItem>
+                                    </AlertDialogTrigger>
+                                </DropdownMenuContent>
+                                </DropdownMenu>
+                                <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete the subscriber.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDelete(subscriber.id)}>
+                                    Delete
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                            </TableCell>
+                        </TableRow>
+                        ))
+                    ) : (
+                        <TableRow>
+                        <TableCell colSpan={4} className="h-24 text-center">
+                            No subscribers found.
+                        </TableCell>
+                        </TableRow>
+                    )}
+                    </TableBody>
+                </Table>
                 </div>
-                <div className="flex gap-2">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                        disabled={currentPage === 1}
-                    >
-                        Previous
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                        disabled={currentPage === totalPages || totalPages === 0}
-                    >
-                        Next
-                    </Button>
+                <div className="flex items-center justify-between pt-4">
+                    <div className="text-sm text-muted-foreground">
+                        Page {totalPages > 0 ? currentPage : 0} of {totalPages}
+                    </div>
+                    <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                        >
+                            Previous
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages || totalPages === 0}
+                        >
+                            Next
+                        </Button>
+                    </div>
                 </div>
-            </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
+                </>
+            )}
+            </CardContent>
+        </Card>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete {selectedSubscribers.length} selected subscribers.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleBatchDelete}>
+                    Yes, delete subscribers
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -326,3 +412,5 @@ export default function SubscribersPage() {
     </>
   );
 }
+
+    
