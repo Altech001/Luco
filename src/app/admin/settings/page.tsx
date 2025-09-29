@@ -17,6 +17,7 @@ import { Users, Bell, Palette, Tag, Lock, Send, LoaderCircle, Eye, EyeOff, Setti
 import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
+import { getSubscribers } from '@/lib/subscribers';
 
 const adminCredsSchema = z.object({
   username: z.string().min(1, 'Username is required.'),
@@ -43,7 +44,20 @@ export default function SettingsPage() {
   const [isSubmittingGeneral, setIsSubmittingGeneral] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
+  const [subscriberCount, setSubscriberCount] = useState(0);
 
+
+  useEffect(() => {
+    const fetchSubscriberCount = async () => {
+      try {
+        const subscribers = await getSubscribers();
+        setSubscriberCount(subscribers.length);
+      } catch (error) {
+        console.error("Failed to fetch subscribers:", error);
+      }
+    };
+    fetchSubscriberCount();
+  }, []);
 
   const adminCredsForm = useForm<AdminCredsFormValues>({
     resolver: zodResolver(adminCredsSchema),
@@ -84,7 +98,7 @@ export default function SettingsPage() {
     setTimeout(() => {
         toast({
             title: 'Bulk SMS Sent',
-            description: `Your message has been queued for delivery to all subscribers.`
+            description: `Your message has been queued for delivery to all ${subscriberCount} subscribers.`
         });
         smsForm.reset();
         setIsSubmittingSms(false);
@@ -94,7 +108,6 @@ export default function SettingsPage() {
   const handleGeneralSubmit = (values: GeneralSettingsFormValues) => {
     setIsSubmittingGeneral(true);
     setTimeout(() => {
-      setTheme(values.promoPaymentsEnabled ? 'dark' : 'light'); // Example logic
       toast({
         title: 'Settings Saved',
         description: 'Your general settings have been updated.',
@@ -286,7 +299,7 @@ export default function SettingsPage() {
                 <CardContent className="space-y-8">
                      <div>
                         <h3 className="text-lg font-medium flex items-center gap-2"><MessageSquare /> Bulk SMS</h3>
-                        <p className="text-sm text-muted-foreground mb-4">Send a message to all your subscribers at once.</p>
+                        <p className="text-sm text-muted-foreground mb-4">Send a message to all {subscriberCount} of your subscribers at once.</p>
                         <Form {...smsForm}>
                             <form onSubmit={smsForm.handleSubmit(handleSmsSubmit)} className="space-y-4 max-w-sm">
                                 <FormField
@@ -307,9 +320,9 @@ export default function SettingsPage() {
                                         </FormItem>
                                     )}
                                     />
-                                <Button type="submit" disabled={isSubmittingSms}>
+                                <Button type="submit" disabled={isSubmittingSms || subscriberCount === 0}>
                                     {isSubmittingSms ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-                                    Send to All Subscribers
+                                    Send to {subscriberCount} Subscribers
                                 </Button>
                             </form>
                         </Form>
