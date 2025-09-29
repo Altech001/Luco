@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Sparkles, LoaderCircle } from 'lucide-react';
+import { Sparkles, LoaderCircle, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getPersonalizedVoucherRecommendations } from '@/ai/flows/personalized-voucher-recommendations';
@@ -48,18 +48,24 @@ export default function PersonalizedVouchers({ onRecommendations }: Personalized
           <span>For You</span>
         </CardTitle>
         <CardDescription>
-          Get voucher recommendations based on your purchase history.
+          Get voucher recommendations based on your purchase history or join our member program.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Button onClick={handleGenerate} disabled={isLoading}>
-          {isLoading ? (
-            <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Sparkles className="mr-2 h-4 w-4" />
-          )}
-          {isLoading ? 'Analyzing...' : 'Get My Recommendations'}
-        </Button>
+        <div className="flex flex-wrap gap-4">
+          <Button onClick={handleGenerate} disabled={isLoading}>
+            {isLoading ? (
+              <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="mr-2 h-4 w-4" />
+            )}
+            {isLoading ? 'Analyzing...' : 'Get My Recommendations'}
+          </Button>
+          <Button variant="outline">
+            <Star className="mr-2 h-4 w-4" />
+            Become a Member
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
