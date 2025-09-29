@@ -18,22 +18,36 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { ThemeToggle } from '../theme-toggle';
+import { addSubscriber } from '@/lib/subscribers';
 
 export default function Header() {
   const { toast } = useToast();
   const [open, setOpen] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const handleSubscribe = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubscribe = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setIsSubmitting(true);
     const formData = new FormData(event.currentTarget);
-    const whatsapp = formData.get('whatsapp');
+    const whatsapp = formData.get('whatsapp') as string;
+
     if (whatsapp) {
-      console.log('Subscribing WhatsApp number:', whatsapp);
-      toast({
-        title: 'Subscription Successful!',
-        description: "You'll be the first to know about new promotions on WhatsApp.",
-      });
-      setOpen(false);
+      try {
+        await addSubscriber(whatsapp);
+        toast({
+          title: 'Subscription Successful!',
+          description: "You'll be the first to know about new promotions on WhatsApp.",
+        });
+        setOpen(false);
+      } catch (error: any) {
+         toast({
+          variant: 'destructive',
+          title: 'Subscription Failed',
+          description: error.message || 'An unexpected error occurred.',
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -76,7 +90,9 @@ export default function Header() {
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button type="submit">Subscribe</Button>
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? 'Subscribing...' : 'Subscribe'}
+                  </Button>
                 </DialogFooter>
               </form>
             </DialogContent>

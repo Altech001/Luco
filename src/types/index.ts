@@ -27,3 +27,9 @@ export type Banner = {
   description: string;
   imageHint: string;
 };
+
+export type Subscriber = {
+  id: string;
+  phone: string;
+  subscribedAt: Date;
+};
