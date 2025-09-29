@@ -15,7 +15,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { collection, query, where, getDocs, addDoc, getCountFromServer } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -77,43 +77,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         setIsLoading(false);
     }
   };
-
-  const handleCreateDefaultAdmin = async () => {
-    setIsLoading(true);
-    try {
-        const adminsRef = collection(db, "admins");
-        const q = query(adminsRef, where("username", "==", "Albertine"));
-        const snapshot = await getCountFromServer(q);
-        
-        if (snapshot.data().count > 0) {
-            toast({
-                variant: 'destructive',
-                title: 'Admin Exists',
-                description: 'The default admin user "Albertine" already exists.',
-            });
-            return;
-        }
-
-        await addDoc(adminsRef, {
-            username: "Albertine",
-            password: "password"
-        });
-
-        toast({
-            title: 'Admin Created',
-            description: 'Default admin "Albertine" created with password "password". You can now log in.',
-        });
-    } catch (error) {
-        console.error("Error creating default admin:", error);
-        toast({
-            variant: 'destructive',
-            title: 'Creation Failed',
-            description: 'Could not create the default admin user.',
-        });
-    } finally {
-        setIsLoading(false);
-    }
-  }
 
   const handleLogout = () => {
     setIsLoggedIn(false);
@@ -244,6 +207,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         </Button>
                     </SheetTrigger>
                     <SheetContent side="left" className="w-64 p-0">
+                         <SheetHeader className="sr-only">
+                            <SheetTitle>Admin Menu</SheetTitle>
+                            <SheetDescription>Navigation links for the admin dashboard.</SheetDescription>
+                        </SheetHeader>
                          <div className="flex items-center gap-2 sm:gap-3 p-4 border-b">
                             <TicketPercent className="h-7 w-7 text-[hsl(var(--highlight))]" />
                             <h1 className="font-headline text-xl sm:text-2xl font-bold tracking-tight">
