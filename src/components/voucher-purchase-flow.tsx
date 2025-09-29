@@ -6,15 +6,16 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Smartphone, KeyRound, LoaderCircle, TicketIcon, Bot, CheckCircle } from 'lucide-react';
+import { Smartphone, KeyRound, LoaderCircle, TicketIcon, Bot, CheckCircle, UserCircle, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import type { Voucher } from '@/types';
 import { Badge } from './ui/badge';
+import { cn } from '@/lib/utils';
 
-type PurchaseStep = 'enter-phone' | 'verify-phone' | 'receipt';
+type PurchaseStep = 'enter-phone' | 'confirm-identity' | 'verify-payment' | 'receipt';
 
 const phoneSchema = z.object({
   phone: z.string().min(10, 'Please enter a valid phone number.'),
@@ -29,12 +30,19 @@ type VoucherPurchaseFlowProps = {
   onComplete: () => void;
 };
 
+type IdentityResponse = {
+  identityname: string;
+  message: string;
+  success: boolean;
+};
+
 const MotionDiv = motion.div;
 
 export default function VoucherPurchaseFlow({ voucher, onComplete }: VoucherPurchaseFlowProps) {
   const [step, setStep] = useState<PurchaseStep>('enter-phone');
   const [isLoading, setIsLoading] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [identity, setIdentity] = useState<IdentityResponse | null>(null);
   const { toast } = useToast();
 
   const phoneForm = useForm<z.infer<typeof phoneSchema>>({
@@ -50,12 +58,48 @@ export default function VoucherPurchaseFlow({ voucher, onComplete }: VoucherPurc
   const handlePhoneSubmit = async (values: z.infer<typeof phoneSchema>) => {
     setIsLoading(true);
     setPhoneNumber(values.phone);
-    await new Promise(res => setTimeout(res, 1000)); // Simulate sending OTP
+    try {
+      const response = await fetch('https://lucopay.onrender.com/identity/msisdn', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'accept': 'application/json',
+        },
+        body: JSON.stringify({ msisdn: values.phone }),
+      });
+      const data: IdentityResponse = await response.json();
+      if (data.success) {
+        setIdentity(data);
+        setStep('confirm-identity');
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Identity Check Failed',
+          description: data.message || 'Could not verify the phone number.',
+        });
+      }
+    } catch (error) {
+      console.error('Identity check failed:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'An error occurred while verifying your number.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleIdentityConfirm = async () => {
+    // This would be where you trigger the payment.
+    // For now, we simulate sending an OTP for verification.
+    setIsLoading(true);
+    await new Promise(res => setTimeout(res, 1000));
     setIsLoading(false);
-    setStep('verify-phone');
+    setStep('verify-payment');
     toast({
       title: 'Verification Code Sent!',
-      description: `A code has been sent to ${values.phone}.`,
+      description: `A code has been sent to ${phoneNumber}.`,
     });
   };
 
@@ -123,13 +167,52 @@ export default function VoucherPurchaseFlow({ voucher, onComplete }: VoucherPurc
           </MotionDiv>
         );
 
-      case 'verify-phone':
+      case 'confirm-identity':
+        return (
+          <MotionDiv initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }}>
+             <div className="flex flex-col space-y-1.5 text-center sm:text-left mb-4">
+                <h2 className="text-lg font-semibold leading-none tracking-tight">Confirm Identity & Pay</h2>
+                <p className="text-sm text-muted-foreground">
+                    Please confirm that you want to complete this purchase.
+                </p>
+            </div>
+            <div className="my-6 space-y-4">
+                <div className="flex items-center justify-between rounded-md border p-4">
+                    <div className="flex items-center gap-3">
+                        <UserCircle className="h-6 w-6 text-muted-foreground"/>
+                        <div>
+                            <p className="text-sm text-muted-foreground">Name</p>
+                            <p className="font-semibold">{identity?.identityname}</p>
+                        </div>
+                    </div>
+                </div>
+                 <div className="flex items-center justify-between rounded-md border p-4">
+                    <div className="flex items-center gap-3">
+                        <Wallet className="h-6 w-6 text-muted-foreground"/>
+                        <div>
+                            <p className="text-sm text-muted-foreground">Amount to Pay</p>
+                            <p className="font-semibold">{formattedPrice}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div className="flex flex-col gap-2">
+                <Button onClick={handleIdentityConfirm} className="w-full" disabled={isLoading}>
+                    {isLoading ? <LoaderCircle className="animate-spin" /> : <CheckCircle className="mr-2" />}
+                    Confirm & Pay
+                </Button>
+                <Button variant="link" size="sm" onClick={() => setStep('enter-phone')}>Back</Button>
+            </div>
+          </MotionDiv>
+        );
+
+      case 'verify-payment':
         return (
           <MotionDiv initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }}>
             <div className="flex flex-col space-y-1.5 text-center sm:text-left mb-4">
-              <h2 className="text-lg font-semibold leading-none tracking-tight">Verify Your Number</h2>
+              <h2 className="text-lg font-semibold leading-none tracking-tight">Verify Your Payment</h2>
               <p className="text-sm text-muted-foreground">
-                Enter the 6-digit code sent to <span className="font-semibold text-foreground">{phoneNumber}</span>.
+                Enter the 6-digit code sent to <span className="font-semibold text-foreground">{phoneNumber}</span> to complete the payment.
               </p>
             </div>
             <Form {...codeForm}>
@@ -154,7 +237,7 @@ export default function VoucherPurchaseFlow({ voucher, onComplete }: VoucherPurc
                     {isLoading ? <LoaderCircle className="animate-spin" /> : <CheckCircle className="mr-2" />}
                     Verify & Purchase
                 </Button>
-                <Button variant="link" size="sm" onClick={() => setStep('enter-phone')}>Back</Button>
+                <Button variant="link" size="sm" onClick={() => setStep('confirm-identity')}>Back</Button>
               </form>
             </Form>
           </MotionDiv>
@@ -170,7 +253,7 @@ export default function VoucherPurchaseFlow({ voucher, onComplete }: VoucherPurc
             <div className="py-6">
                 <div className="relative flex min-h-[160px] w-full rounded-lg border bg-card text-card-foreground shadow-md">
                     <div className="relative w-2/3 p-4">
-                        <div className="absolute top-1/2 -right-[13px] z-10 -translate-y-1/2 h-6 w-6 rounded-full bg-background dark:bg-card-foreground"></div>
+                        <div className="absolute top-1/2 -right-[13px] z-10 -translate-y-1/2 h-6 w-6 rounded-full bg-background dark:bg-card"></div>
                          <div className="flex h-full flex-col justify-between space-y-4">
                             <div>
                                 <Badge variant="secondary" className="mb-2">{voucher.category}</Badge>
@@ -184,7 +267,7 @@ export default function VoucherPurchaseFlow({ voucher, onComplete }: VoucherPurc
                     </div>
                     <div className="relative w-1/3 rounded-r-lg border-l-2 border-dashed bg-accent/30 dark:bg-accent/10 p-2">
                       <div className="flex h-full flex-col items-center justify-center text-center">
-                        <TicketIcon className="h-10 w-10 text-highlight" />
+                        <TicketIcon className="h-10 w-10 text-[hsl(var(--highlight))]" />
                         <p className="mt-2 text-xl font-bold text-[hsl(var(--highlight))]">{voucher.discount}</p>
                       </div>
                     </div>
