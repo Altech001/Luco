@@ -13,25 +13,23 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
-import { Users, Bell, Palette, Tag, Lock, Send, LoaderCircle, Eye, EyeOff, Settings as SettingsIcon } from 'lucide-react';
+import { Users, Bell, Palette, Tag, Lock, Send, LoaderCircle, Eye, EyeOff, Settings as SettingsIcon, Shield, SlidersHorizontal, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
 
 const adminCredsSchema = z.object({
   username: z.string().min(1, 'Username is required.'),
   password: z.string().min(6, 'Password must be at least 6 characters.'),
 });
-
 type AdminCredsFormValues = z.infer<typeof adminCredsSchema>;
 
 const smsSchema = z.object({
     message: z.string().min(10, 'Message must be at least 10 characters long.')
 });
-
 type SmsFormValues = z.infer<typeof smsSchema>;
 
 const generalSettingsSchema = z.object({
-  theme: z.enum(["light", "dark"]),
   promoPaymentsEnabled: z.boolean().default(false),
 })
 type GeneralSettingsFormValues = z.infer<typeof generalSettingsSchema>;
@@ -42,7 +40,9 @@ export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const [isSubmittingCreds, setIsSubmittingCreds] = useState(false);
   const [isSubmittingSms, setIsSubmittingSms] = useState(false);
+  const [isSubmittingGeneral, setIsSubmittingGeneral] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [activeTab, setActiveTab] = useState('general');
 
 
   const adminCredsForm = useForm<AdminCredsFormValues>({
@@ -63,18 +63,12 @@ export default function SettingsPage() {
    const generalSettingsForm = useForm<GeneralSettingsFormValues>({
     resolver: zodResolver(generalSettingsSchema),
     defaultValues: {
-      theme: (theme as "light" | "dark") || "light",
       promoPaymentsEnabled: false,
     },
   });
 
-  useEffect(() => {
-    generalSettingsForm.setValue('theme', (theme as "light" | "dark") || "light");
-  }, [theme, generalSettingsForm]);
-
   const handleCredsSubmit = (values: AdminCredsFormValues) => {
     setIsSubmittingCreds(true);
-    // Simulate API call
     setTimeout(() => {
       toast({
         title: 'Credentials Updated',
@@ -87,7 +81,6 @@ export default function SettingsPage() {
   
   const handleSmsSubmit = (values: SmsFormValues) => {
     setIsSubmittingSms(true);
-    // Simulate API call
     setTimeout(() => {
         toast({
             title: 'Bulk SMS Sent',
@@ -98,194 +91,234 @@ export default function SettingsPage() {
     }, 1500)
   }
 
+  const handleGeneralSubmit = (values: GeneralSettingsFormValues) => {
+    setIsSubmittingGeneral(true);
+    setTimeout(() => {
+      setTheme(values.promoPaymentsEnabled ? 'dark' : 'light'); // Example logic
+      toast({
+        title: 'Settings Saved',
+        description: 'Your general settings have been updated.',
+      });
+      setIsSubmittingGeneral(false);
+    }, 1000);
+  };
+
   const handleThemeChange = (isDarkMode: boolean) => {
     const newTheme = isDarkMode ? 'dark' : 'light';
     setTheme(newTheme);
-    generalSettingsForm.setValue('theme', newTheme);
   };
+
+  const navItems = [
+    { id: 'general', label: 'General', icon: SlidersHorizontal },
+    { id: 'security', label: 'Security', icon: Shield },
+    { id: 'notifications', label: 'Notifications', icon: Bell },
+  ];
 
   return (
     <>
-      <div className="flex items-center justify-between">
+      <div className="mb-8">
         <h1 className="text-3xl font-bold">Settings</h1>
+        <p className="text-muted-foreground">Manage your application settings and preferences.</p>
       </div>
-      <div className="mt-8 grid grid-cols-1 gap-8 md:grid-cols-2">
-        {/* User Management & Credentials */}
-        <div className="flex flex-col gap-8">
+      
+      <div className="flex flex-col md:flex-row gap-8">
+        <nav className="flex flex-row md:flex-col gap-2 md:w-48">
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
+                activeTab === item.id && 'bg-accent text-primary font-semibold'
+              )}
+            >
+              <item.icon className="h-4 w-4" />
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="flex-1">
+          {activeTab === 'general' && (
             <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Users /> User Management</CardTitle>
-                <CardDescription>
-                View and manage your members and subscribers.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-                <Button asChild variant="outline">
-                    <Link href="/admin/members">Manage Members</Link>
-                </Button>
-                <Button asChild variant="outline">
-                    <Link href="/admin/subscribers">Manage Subscribers</Link>
-                </Button>
-            </CardContent>
+              <CardHeader>
+                <CardTitle>General Settings</CardTitle>
+                <CardDescription>Customize app appearance and promotion rules.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Form {...generalSettingsForm}>
+                  <form onSubmit={generalSettingsForm.handleSubmit(handleGeneralSubmit)} className="space-y-6">
+                     <FormField
+                        control={generalSettingsForm.control}
+                        name="promoPaymentsEnabled"
+                        render={({ field }) => (
+                           <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                                <FormLabel className="text-base flex items-center gap-2"><Palette/> Appearance</FormLabel>
+                                <FormDescription>
+                                    Enable to switch to a dark theme.
+                                </FormDescription>
+                            </div>
+                            <FormControl>
+                                <Switch
+                                    checked={theme === 'dark'}
+                                    onCheckedChange={handleThemeChange}
+                                />
+                            </FormControl>
+                        </FormItem>
+                        )}
+                    />
+                    <Separator />
+                     <FormField
+                        control={generalSettingsForm.control}
+                        name="promoPaymentsEnabled"
+                        render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                            <FormLabel className="text-base flex items-center gap-2"><Tag/> Promotions</FormLabel>
+                            <FormDescription>
+                                Allow "Promo" category vouchers to have a price.
+                            </FormDescription>
+                            </div>
+                            <FormControl>
+                            <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                            />
+                            </FormControl>
+                        </FormItem>
+                        )}
+                    />
+                    <Button type="submit" disabled={isSubmittingGeneral}>
+                        {isSubmittingGeneral ? <LoaderCircle className="animate-spin" /> : 'Save Changes'}
+                    </Button>
+                  </form>
+                </Form>
+              </CardContent>
             </Card>
+          )}
+
+          {activeTab === 'security' && (
              <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Lock /> Admin Credentials</CardTitle>
+                    <CardTitle>Security</CardTitle>
                     <CardDescription>
-                    Update your administrator login details.
+                    Manage administrator credentials and user access.
                     </CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <Form {...adminCredsForm}>
-                    <form onSubmit={adminCredsForm.handleSubmit(handleCredsSubmit)} className="space-y-4">
-                        <FormField
-                        control={adminCredsForm.control}
-                        name="username"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Username</FormLabel>
-                            <FormControl>
-                                <Input placeholder="admin" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                        />
-                        <FormField
-                        control={adminCredsForm.control}
-                        name="password"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>New Password</FormLabel>
-                            <FormControl>
-                                <div className="relative">
-                                    <Input 
-                                    type={showPassword ? 'text' : 'password'}
-                                    placeholder="••••••••" 
-                                    {...field} 
-                                    className="pr-10" 
-                                    />
-                                    <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground"
-                                    >
-                                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                    </button>
-                                </div>
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                        />
-                        <Button type="submit" disabled={isSubmittingCreds}>
-                        {isSubmittingCreds ? <LoaderCircle className="animate-spin" /> : 'Save Credentials'}
-                        </Button>
-                    </form>
-                    </Form>
+                <CardContent className="space-y-8">
+                     <div>
+                        <h3 className="text-lg font-medium flex items-center gap-2"><Lock /> Admin Credentials</h3>
+                        <p className="text-sm text-muted-foreground mb-4">Update your administrator login details.</p>
+                         <Form {...adminCredsForm}>
+                            <form onSubmit={adminCredsForm.handleSubmit(handleCredsSubmit)} className="space-y-4 max-w-sm">
+                                <FormField
+                                control={adminCredsForm.control}
+                                name="username"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Username</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="admin" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                                />
+                                <FormField
+                                control={adminCredsForm.control}
+                                name="password"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>New Password</FormLabel>
+                                    <FormControl>
+                                        <div className="relative">
+                                            <Input 
+                                            type={showPassword ? 'text' : 'password'}
+                                            placeholder="••••••••" 
+                                            {...field} 
+                                            className="pr-10" 
+                                            />
+                                            <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground"
+                                            >
+                                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                            </button>
+                                        </div>
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                                />
+                                <Button type="submit" disabled={isSubmittingCreds}>
+                                {isSubmittingCreds ? <LoaderCircle className="animate-spin" /> : 'Save Credentials'}
+                                </Button>
+                            </form>
+                        </Form>
+                    </div>
+                     <Separator />
+                     <div>
+                        <h3 className="text-lg font-medium flex items-center gap-2"><Users /> User Management</h3>
+                        <p className="text-sm text-muted-foreground mb-4">View and manage your members and subscribers.</p>
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            <Button asChild variant="outline">
+                                <Link href="/admin/members">Manage Members</Link>
+                            </Button>
+                            <Button asChild variant="outline">
+                                <Link href="/admin/subscribers">Manage Subscribers</Link>
+                            </Button>
+                        </div>
+                    </div>
                 </CardContent>
             </Card>
-        </div>
+          )}
 
-        {/* Bulk SMS & General Settings */}
-        <div className="flex flex-col gap-8">
-            <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Bell /> Bulk SMS Notifications</CardTitle>
-                <CardDescription>
-                Send a message to all your subscribers at once.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Form {...smsForm}>
-                    <form onSubmit={smsForm.handleSubmit(handleSmsSubmit)} className="space-y-4">
-                        <FormField
-                            control={smsForm.control}
-                            name="message"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Message</FormLabel>
-                                <FormControl>
-                                    <Textarea
-                                    placeholder="Type your notification message here..."
-                                    className="resize-none"
-                                    rows={4}
-                                    {...field}
+          {activeTab === 'notifications' && (
+             <Card>
+                <CardHeader>
+                    <CardTitle>Notifications</CardTitle>
+                    <CardDescription>
+                    Communicate with your subscribers.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-8">
+                     <div>
+                        <h3 className="text-lg font-medium flex items-center gap-2"><MessageSquare /> Bulk SMS</h3>
+                        <p className="text-sm text-muted-foreground mb-4">Send a message to all your subscribers at once.</p>
+                        <Form {...smsForm}>
+                            <form onSubmit={smsForm.handleSubmit(handleSmsSubmit)} className="space-y-4 max-w-sm">
+                                <FormField
+                                    control={smsForm.control}
+                                    name="message"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                        <FormLabel>Message</FormLabel>
+                                        <FormControl>
+                                            <Textarea
+                                            placeholder="Type your notification message here..."
+                                            className="resize-none"
+                                            rows={4}
+                                            {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                        </FormItem>
+                                    )}
                                     />
-                                </FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                            />
-                        <Button type="submit" disabled={isSubmittingSms}>
-                            {isSubmittingSms ? <LoaderCircle className="animate-spin" /> : <Send />}
-                            Send to All Subscribers
-                        </Button>
-                    </form>
-                </Form>
-            </CardContent>
+                                <Button type="submit" disabled={isSubmittingSms}>
+                                    {isSubmittingSms ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                                    Send to All Subscribers
+                                </Button>
+                            </form>
+                        </Form>
+                     </div>
+                </CardContent>
             </Card>
-
-            <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><SettingsIcon /> General Settings</CardTitle>
-                <CardDescription>
-                Customize app appearance and promotion rules.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                <Form {...generalSettingsForm}>
-                    <form>
-                        <FormField
-                            control={generalSettingsForm.control}
-                            name="theme"
-                            render={() => (
-                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                                    <div className="space-y-0.5">
-                                        <FormLabel className="text-base flex items-center gap-2"><Palette/> Appearance</FormLabel>
-                                        <FormDescription>
-                                            Enable to switch to a dark theme.
-                                        </FormDescription>
-                                    </div>
-                                    <FormControl>
-                                        <Switch
-                                            checked={theme === 'dark'}
-                                            onCheckedChange={handleThemeChange}
-                                        />
-                                    </FormControl>
-                                </FormItem>
-                            )}
-                        />
-
-                        <Separator className="my-6" />
-
-                        <FormField
-                            control={generalSettingsForm.control}
-                            name="promoPaymentsEnabled"
-                            render={({ field }) => (
-                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                                <div className="space-y-0.5">
-                                <FormLabel className="text-base flex items-center gap-2"><Tag/> Promotions</FormLabel>
-                                <FormDescription>
-                                    Allow "Promo" category vouchers to have a price.
-                                </FormDescription>
-                                </div>
-                                <FormControl>
-                                <Switch
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                />
-                                </FormControl>
-                            </FormItem>
-                            )}
-                        />
-                    </form>
-                </Form>
-            </CardContent>
-            </Card>
+          )}
         </div>
       </div>
     </>
   );
 }
-    
