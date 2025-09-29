@@ -29,9 +29,10 @@ import { getSubscribers, sendSms } from '@/lib/subscribers';
 import type { Subscriber } from '@/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { v4 as uuidv4 } from 'uuid';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
+import { verifyIdentity, requestPayment, checkPaymentStatus } from '@/lib/payment';
+
 
 const phoneSchema = z.object({
   phone: z.string().min(10, 'A valid phone number is required.'),
@@ -69,21 +70,16 @@ const PaymentFlow = () => {
     setIsLoading(true);
     setPhone(values.phone);
     try {
-      const response = await fetch('https://lucopay.onrender.com/identity/msisdn', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'accept': 'application/json' },
-        body: JSON.stringify({ msisdn: values.phone }),
-      });
-      const data = await response.json();
-      if (data.success) {
-        setIdentityName(data.identityname);
+      const result = await verifyIdentity(values.phone);
+      if (result.success && result.identityName) {
+        setIdentityName(result.identityName);
         setStep('amount');
-        toast({ title: 'Identity Verified', description: `Welcome, ${data.identityname}!` });
+        toast({ title: 'Identity Verified', description: `Welcome, ${result.identityName}!` });
       } else {
-        toast({ variant: 'destructive', title: 'Verification Failed', description: data.message });
+        toast({ variant: 'destructive', title: 'Verification Failed', description: result.error });
       }
-    } catch (err) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not connect to the identity service.' });
+    } catch (err: any) {
+      toast({ variant: 'destructive', title: 'Error', description: err.message || 'Could not connect to the identity service.' });
     } finally {
       setIsLoading(false);
     }
@@ -91,29 +87,19 @@ const PaymentFlow = () => {
 
   const handlePaymentRequest = async (values: AmountFormValues) => {
     setIsLoading(true);
-    const uniqueReference = values.reference || uuidv4();
-    setReference(uniqueReference);
     try {
-      const response = await fetch('https://lucopay.onrender.com/api/v1/request_payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'accept': 'application/json' },
-        body: JSON.stringify({
-          amount: values.amount.toString(),
-          number: phone.replace('+', ''),
-          refer: uniqueReference,
-        }),
-      });
-      const data = await response.json();
-      if (data.success) {
+      const result = await requestPayment(phone, values.amount, values.reference);
+      if (result.success && result.transactionId) {
+        setReference(result.transactionId);
         setStep('status');
         toast({ title: 'Payment Initiated', description: 'Checking transaction status...' });
-        pollPaymentStatus(uniqueReference);
+        pollPaymentStatus(result.transactionId);
       } else {
-        toast({ variant: 'destructive', title: 'Payment Failed', description: data.message });
+        toast({ variant: 'destructive', title: 'Payment Failed', description: result.error });
         setStep('failed');
       }
-    } catch (err) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not connect to the payment service.' });
+    } catch (err: any) {
+      toast({ variant: 'destructive', title: 'Error', description: err.message || 'Could not connect to the payment service.' });
        setStep('failed');
     } finally {
       setIsLoading(false);
@@ -123,25 +109,29 @@ const PaymentFlow = () => {
   const pollPaymentStatus = (ref: string) => {
     const intervalId = setInterval(async () => {
       try {
-        const response = await fetch('https://lucopay.onrender.com/api/v1/payment_webhook', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'accept': 'application/json' },
-          body: JSON.stringify({ reference: ref }),
-        });
-        const data = await response.json();
-
-        if (data.status === 'succeeded') {
-          clearInterval(intervalId);
-          setPaymentStatus('succeeded');
-          setStep('completed');
-          toast({ title: 'Payment Successful!', className: 'bg-green-500 text-white' });
-        } else if (data.status === 'failed') {
-          clearInterval(intervalId);
-          setPaymentStatus('failed');
-          setStep('failed');
-          toast({ variant: 'destructive', title: 'Payment Failed', description: 'The transaction was not successful.' });
+        const result = await checkPaymentStatus(ref);
+        
+        if(result.success && result.data) {
+            const status = result.data.status?.toLowerCase();
+            if (status === 'succeeded' || status === 'success') {
+              clearInterval(intervalId);
+              setPaymentStatus('succeeded');
+              setStep('completed');
+              toast({ title: 'Payment Successful!', className: 'bg-green-500 text-white' });
+            } else if (status === 'failed') {
+              clearInterval(intervalId);
+              setPaymentStatus('failed');
+              setStep('failed');
+              toast({ variant: 'destructive', title: 'Payment Failed', description: result.data.reason || 'The transaction was not successful.' });
+            }
+        } else if (!result.success && result.error !== 'Transaction not found. Please check your reference.') {
+            // Stop polling on definitive errors other than "not found"
+            clearInterval(intervalId);
+            setPaymentStatus('error');
+            setStep('failed');
+            toast({ variant: 'destructive', title: 'Status Check Error', description: result.error });
         }
-        // If status is 'pending', the interval continues to run
+        // If status is 'pending' or 'not found', the interval continues to run
       } catch (err) {
         clearInterval(intervalId);
         setPaymentStatus('error');
