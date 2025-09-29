@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, LoaderCircle, MoreHorizontal, Pencil, Trash2, Ticket, Tag, Calendar, DollarSign, Percent, FileText, Upload, ArrowLeft } from 'lucide-react';
+import { PlusCircle, LoaderCircle, MoreHorizontal, Pencil, Trash2, Ticket, Tag, Calendar, DollarSign, Percent, FileText, Upload, ArrowLeft, ShoppingCart } from 'lucide-react';
 import { Switch } from "@/components/ui/switch"
 import type { Voucher, VoucherProfile } from '@/types';
 import { getVouchers, addVoucher, updateVoucher, deleteVoucher, batchAddVouchers, getVoucherProfiles, batchDeleteVouchers } from '@/lib/vouchers';
@@ -356,7 +356,7 @@ export default function VouchersPage() {
   const [isAddEditDialogOpen, setIsAddEditDialogOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(null);
-  const [view, setView] = useState<'grid' | 'table'>('grid');
+  const [view, setView] = useState<'grid' | 'table' | 'purchased'>('grid');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedVouchers, setSelectedVouchers] = useState<string[]>([]);
   const { toast } = useToast();
@@ -527,8 +527,8 @@ export default function VouchersPage() {
     minimumFractionDigits: 0,
   }).format(price);
 
-  const vouchersByCategory = useMemo(() => {
-    return vouchers.reduce((acc, voucher) => {
+  const { vouchersByCategory, purchasedCount } = useMemo(() => {
+    const categorized = vouchers.reduce((acc, voucher) => {
       const category = voucher.category;
       if (!acc[category]) {
         acc[category] = [];
@@ -536,6 +536,10 @@ export default function VouchersPage() {
       acc[category].push(voucher);
       return acc;
     }, {} as Record<string, Voucher[]>);
+
+    const purchased = vouchers.filter(v => v.status === 'purchased').length;
+
+    return { vouchersByCategory: categorized, purchasedCount: purchased };
   }, [vouchers]);
 
   const handleCategoryClick = (categoryName: string) => {
@@ -549,6 +553,7 @@ export default function VouchersPage() {
   }, [selectedCategory]);
 
   const currentVouchers = selectedCategory ? vouchersByCategory[selectedCategory] || [] : [];
+  const purchasedVouchers = vouchers.filter(v => v.status === 'purchased');
   
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -611,6 +616,19 @@ export default function VouchersPage() {
                   </Card>
                 )
               })}
+               <Card 
+                    className="cursor-pointer hover:shadow-lg transition-shadow bg-green-500/10 dark:bg-green-500/5 border-green-500/20"
+                    onClick={() => setView('purchased')}
+                  >
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium text-green-600 dark:text-green-400">Purchased Vouchers</CardTitle>
+                      <ShoppingCart className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-green-600 dark:text-green-400">{purchasedCount}</div>
+                      <p className="text-xs text-green-500 dark:text-green-500">Vouchers</p>
+                    </CardContent>
+                </Card>
             </div>
           )}
         </CardContent>
@@ -778,10 +796,70 @@ export default function VouchersPage() {
     </AlertDialog>
   );
 
+  const renderPurchasedView = () => (
+     <div className="flex flex-col gap-8">
+      <div className="flex items-center justify-between gap-2">
+        <div className='flex items-center gap-4'>
+           <Button variant="outline" size="icon" onClick={() => setView('grid')}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h1 className="text-3xl font-bold">Purchased Vouchers</h1>
+        </div>
+      </div>
+       <Card>
+        <CardHeader>
+          <CardTitle>Purchased Voucher List</CardTitle>
+          <CardDescription>
+            A list of all vouchers that have been successfully purchased.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+             <div className="flex items-center justify-center py-20">
+              <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Title</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Price</TableHead>
+                    <TableHead>Code</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {purchasedVouchers.length > 0 ? (
+                    purchasedVouchers.map((voucher) => (
+                      <TableRow key={voucher.id}>
+                        <TableCell className="font-medium">{voucher.title}</TableCell>
+                        <TableCell>{voucher.category}</TableCell>
+                        <TableCell>{formattedPrice(voucher.price)}</TableCell>
+                        <TableCell><Badge variant="outline">{voucher.code}</Badge></TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                     <TableRow>
+                      <TableCell colSpan={4} className="h-24 text-center">
+                        No vouchers have been purchased yet.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+       </Card>
+    </div>
+  );
 
   return (
     <>
-      {view === 'grid' ? renderGridView() : renderTableView()}
+      {view === 'grid' && renderGridView()}
+      {view === 'table' && renderTableView()}
+      {view === 'purchased' && renderPurchasedView()}
       
        <Dialog open={isAddEditDialogOpen} onOpenChange={handleDialogChange}>
           <DialogContent className="sm:max-w-md">
@@ -814,3 +892,5 @@ export default function VouchersPage() {
     </>
   );
 }
+
+    
