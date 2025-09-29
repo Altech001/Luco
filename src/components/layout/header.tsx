@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Bell, Ticket, Mail } from 'lucide-react';
+import { Bell, Ticket, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -23,12 +23,12 @@ export default function Header() {
   const handleSubscribe = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const email = formData.get('email');
-    if (email) {
-      console.log('Subscribing email:', email);
+    const whatsapp = formData.get('whatsapp');
+    if (whatsapp) {
+      console.log('Subscribing WhatsApp number:', whatsapp);
       toast({
         title: 'Subscription Successful!',
-        description: "You'll be the first to know about new promotions.",
+        description: "You'll be the first to know about new promotions on WhatsApp.",
       });
       setOpen(false);
     }
@@ -53,20 +53,20 @@ export default function Header() {
           <DialogContent className="sm:max-w-[425px]">
             <form onSubmit={handleSubscribe}>
               <DialogHeader>
-                <DialogTitle>Stay Updated</DialogTitle>
+                <DialogTitle>Stay Updated on WhatsApp</DialogTitle>
                 <DialogDescription>
-                  Enter your email to receive notifications about new promotions and
+                  Enter your WhatsApp number to receive notifications about new promotions and
                   exclusive deals.
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="email" className="text-right">
-                    Email
+                  <Label htmlFor="whatsapp" className="text-right">
+                    WhatsApp
                   </Label>
                   <div className="relative col-span-3">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input id="email" name="email" type="email" required placeholder="you@example.com" className="pl-10" />
+                    <MessageSquare className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input id="whatsapp" name="whatsapp" type="tel" required placeholder="+1234567890" className="pl-10" />
                   </div>
                 </div>
               </div>
