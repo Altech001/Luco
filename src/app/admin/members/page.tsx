@@ -302,7 +302,7 @@ export default function MembersPage() {
             </div>
             </>
           )}
-        </Content>
+        </CardContent>
       </Card>
       <Dialog open={isEditDialogOpen} onOpenChange={(isOpen) => {
           setIsEditDialogOpen(isOpen);
@@ -395,3 +395,5 @@ export default function MembersPage() {
     </>
   );
 }
+
+    
