@@ -39,7 +39,7 @@ export default function VoucherList({
     <div>
       <h2 className="font-headline text-2xl sm:text-3xl font-bold tracking-tight">Available Vouchers</h2>
       <Tabs defaultValue={initialTab} className="mt-4" onValueChange={handleValueChange}>
-        <TabsList className="h-auto flex-col sm:flex-row sm:flex-wrap sm:justify-start">
+        <TabsList className="h-auto flex-wrap justify-start">
           {allCategories.map(cat => (
             <TabsTrigger key={cat.name} value={cat.name.toLowerCase().replace(' ', '')} className="w-full justify-start text-xs sm:w-auto sm:justify-center sm:text-sm">
               <cat.icon className="mr-2 h-4 w-4" />
@@ -51,7 +51,7 @@ export default function VoucherList({
         {allCategories.map(cat => (
           <TabsContent key={cat.name} value={cat.name.toLowerCase().replace(' ', '')}>
              {filteredVouchers(cat.name).length > 0 ? (
-              <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:gap-6">
                 <AnimatePresence>
                   {filteredVouchers(cat.name).map((voucher, index) => (
                     <motion.div
