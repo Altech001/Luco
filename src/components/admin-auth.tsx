@@ -71,7 +71,6 @@ export default function AdminAuth({ onLoginSuccess }: AdminAuthProps) {
                     Luco
                 </h1>
             </div>
-          <CardTitle className="text-2xl">Admin Login</CardTitle>
           <CardDescription>Enter your credentials to access the dashboard.</CardDescription>
         </CardHeader>
         <CardContent>
