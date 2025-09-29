@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, LoaderCircle, MoreHorizontal, Pencil, Trash2, Ticket, Tag, Calendar, DollarSign, Percent, FileText, Upload, ArrowLeft, ShoppingCart, Download } from 'lucide-react';
+import { PlusCircle, LoaderCircle, MoreHorizontal, Pencil, Trash2, Ticket, Tag, Calendar, DollarSign, Percent, FileText, Upload, ArrowLeft, ShoppingCart, Download, Smartphone } from 'lucide-react';
 import { Switch } from "@/components/ui/switch"
 import type { Voucher, VoucherProfile } from '@/types';
 import { getVouchers, addVoucher, updateVoucher, deleteVoucher, batchAddVouchers, getVoucherProfiles, batchDeleteVouchers } from '@/lib/vouchers';
@@ -348,12 +348,109 @@ function ImportDialog({ isImportOpen, setIsImportOpen, voucherProfiles, onImport
   );
 }
 
+const purchasedVoucherEditSchema = z.object({
+  purchasedBy: z.string().min(10, 'Please enter a valid phone number.'),
+});
+type PurchasedVoucherEditValues = z.infer<typeof purchasedVoucherEditSchema>;
+
+function PurchasedVoucherEditDialog({
+  voucher,
+  isOpen,
+  onOpenChange,
+  onSuccess,
+}: {
+  voucher: Voucher | null,
+  isOpen: boolean,
+  onOpenChange: (open: boolean) => void,
+  onSuccess: () => void,
+}) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
+  const form = useForm<PurchasedVoucherEditValues>({
+    resolver: zodResolver(purchasedVoucherEditSchema),
+    defaultValues: {
+      purchasedBy: voucher?.purchasedBy || '',
+    },
+  });
+
+  useEffect(() => {
+    if (voucher) {
+      form.setValue('purchasedBy', voucher.purchasedBy || '');
+    }
+  }, [voucher, form]);
+
+  const handleUpdate = async (values: PurchasedVoucherEditValues) => {
+    if (!voucher) return;
+    setIsSubmitting(true);
+    try {
+      await updateVoucher(voucher.id, { purchasedBy: values.purchasedBy });
+      toast({
+        title: 'Voucher Updated',
+        description: 'The buyer phone number has been updated.',
+      });
+      onSuccess();
+    } catch (error) {
+      console.error('Error updating purchased voucher:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Update Failed',
+        description: 'Could not update the voucher.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit Purchased Voucher</DialogTitle>
+          <DialogDescription>
+            You can only edit the phone number for a purchased voucher.
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleUpdate)} className="space-y-4 py-4">
+            <FormField
+              control={form.control}
+              name="purchasedBy"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Purchased By (Phone Number)</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input placeholder="+256..." {...field} className="pl-10" />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" variant="outline">Cancel</Button>
+              </DialogClose>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? <LoaderCircle className="animate-spin" /> : 'Save Changes'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+
 export default function VouchersPage() {
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [voucherProfiles, setVoucherProfiles] = useState<VoucherProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAddEditDialogOpen, setIsAddEditDialogOpen] = useState(false);
+  const [isPurchasedEditOpen, setIsPurchasedEditOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(null);
   const [view, setView] = useState<'grid' | 'table' | 'purchased'>('grid');
@@ -590,6 +687,11 @@ export default function VouchersPage() {
       description: 'The purchased voucher data has been downloaded as a CSV file.',
     });
   };
+
+  const handleOpenPurchasedEdit = (voucher: Voucher) => {
+    setSelectedVoucher(voucher);
+    setIsPurchasedEditOpen(true);
+  }
 
   const renderGridView = () => (
     <>
@@ -852,6 +954,7 @@ export default function VouchersPage() {
                         <TableHead>Price</TableHead>
                         <TableHead>Code</TableHead>
                         <TableHead>Purchased By</TableHead>
+                        <TableHead>Purchased At</TableHead>
                         <TableHead><span className="sr-only">Actions</span></TableHead>
                     </TableRow>
                     </TableHeader>
@@ -864,6 +967,7 @@ export default function VouchersPage() {
                             <TableCell>{formattedPrice(voucher.price)}</TableCell>
                             <TableCell><Badge variant="outline">{voucher.code}</Badge></TableCell>
                             <TableCell>{voucher.purchasedBy || 'N/A'}</TableCell>
+                            <TableCell>{voucher.purchasedAt ? format(voucher.purchasedAt, 'dd MMM yyyy, HH:mm') : 'N/A'}</TableCell>
                              <TableCell>
                                 <AlertDialog>
                                     <DropdownMenu>
@@ -875,10 +979,7 @@ export default function VouchersPage() {
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
                                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                        <DropdownMenuItem onSelect={() => {
-                                            setSelectedVoucher(voucher);
-                                            setIsAddEditDialogOpen(true);
-                                        }}>
+                                        <DropdownMenuItem onSelect={() => handleOpenPurchasedEdit(voucher)}>
                                             <Pencil className="mr-2 h-4 w-4" /> Edit
                                         </DropdownMenuItem>
                                         <AlertDialogTrigger asChild>
@@ -892,7 +993,7 @@ export default function VouchersPage() {
                                     <AlertDialogHeader>
                                         <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                         <AlertDialogDescription>
-                                        This action cannot be undone. This will permanently delete the voucher.
+                                        This action cannot be undone. This will permanently delete the voucher record.
                                         </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
@@ -908,7 +1009,7 @@ export default function VouchersPage() {
                         ))
                     ) : (
                         <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center">
+                        <TableCell colSpan={7} className="h-24 text-center">
                             No vouchers have been purchased yet.
                         </TableCell>
                         </TableRow>
@@ -932,14 +1033,14 @@ export default function VouchersPage() {
        <Dialog open={isAddEditDialogOpen} onOpenChange={handleDialogChange}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>{selectedVoucher ? 'Edit Voucher' : 'Add New Voucher'}</DialogTitle>
+              <DialogTitle>{selectedVoucher && selectedVoucher.status !== 'purchased' ? 'Edit Voucher' : 'Add New Voucher'}</DialogTitle>
               <DialogDescription>
-                {selectedVoucher ? 'Make changes to the voucher details below.' : 'Fill out the form to create a new voucher.'}
+                {selectedVoucher && selectedVoucher.status !== 'purchased' ? 'Make changes to the voucher details below.' : 'Fill out the form to create a new voucher.'}
               </DialogDescription>
             </DialogHeader>
             <VoucherForm
               key={selectedVoucher?.id || 'new'}
-              initialValues={selectedVoucher ? {
+              initialValues={selectedVoucher && selectedVoucher.status !== 'purchased' ? {
                 ...selectedVoucher,
                 expiryDate: selectedVoucher.expiryDate
               } : undefined}
@@ -956,6 +1057,16 @@ export default function VouchersPage() {
         voucherProfiles={voucherProfiles}
         onImport={handleImport}
         isSubmitting={isSubmitting}
+      />
+
+      <PurchasedVoucherEditDialog
+        voucher={selectedVoucher}
+        isOpen={isPurchasedEditOpen}
+        onOpenChange={setIsPurchasedEditOpen}
+        onSuccess={() => {
+          setIsPurchasedEditOpen(false);
+          fetchData();
+        }}
       />
     </>
   );
