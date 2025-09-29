@@ -315,36 +315,34 @@ export default function BannersPage() {
                         <TableCell className="font-medium">{banner.description}</TableCell>
                         <TableCell className="hidden md:table-cell">{banner.imageHint}</TableCell>
                         <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button aria-haspopup="true" size="icon" variant="ghost">
-                                <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">Toggle menu</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DialogTrigger asChild>
+                           <AlertDialog>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button aria-haspopup="true" size="icon" variant="ghost">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                  <span className="sr-only">Toggle menu</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                   <DropdownMenuItem onSelect={() => window.open(banner.imageUrl, '_blank')}>
                                     <Eye className="mr-2 h-4 w-4"/> Preview
                                   </DropdownMenuItem>
-                                </DialogTrigger>
-                                <DropdownMenuItem
-                                  onSelect={() => {
-                                    setSelectedBanner(banner);
-                                    setIsEditDialogOpen(true);
-                                  }}
-                                >
-                                  <Pencil className="mr-2 h-4 w-4" /> Edit
-                                </DropdownMenuItem>
-                               <AlertDialogTrigger asChild>
-                                <DropdownMenuItem className="text-destructive focus:text-destructive">
-                                  <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                </DropdownMenuItem>
-                              </AlertDialogTrigger>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                          <AlertDialog>
+                                  <DropdownMenuItem
+                                    onSelect={() => {
+                                      setSelectedBanner(banner);
+                                      setIsEditDialogOpen(true);
+                                    }}
+                                  >
+                                    <Pencil className="mr-2 h-4 w-4" /> Edit
+                                  </DropdownMenuItem>
+                                <AlertDialogTrigger asChild>
+                                  <DropdownMenuItem className="text-destructive focus:text-destructive">
+                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                  </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                             <AlertDialogContent>
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Are you sure?</AlertDialogTitle>
@@ -359,7 +357,7 @@ export default function BannersPage() {
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
-                          </AlertDialog>
+                           </AlertDialog>
                         </TableCell>
                       </TableRow>
                     ))
