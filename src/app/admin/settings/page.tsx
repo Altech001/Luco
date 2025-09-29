@@ -40,10 +40,11 @@ type PhoneFormValues = z.infer<typeof phoneSchema>;
 
 const amountSchema = z.object({
   amount: z.coerce.number().positive('Amount must be greater than 0.'),
+  reference: z.string().optional(),
 });
 type AmountFormValues = z.infer<typeof amountSchema>;
 
-type PaymentStep = 'idle' | 'identity' | 'amount' | 'status' | 'completed' | 'failed';
+type PaymentStep = 'idle' | 'amount' | 'status' | 'completed' | 'failed';
 
 const PaymentFlow = () => {
   const { toast } = useToast();
@@ -61,7 +62,7 @@ const PaymentFlow = () => {
 
   const amountForm = useForm<AmountFormValues>({
     resolver: zodResolver(amountSchema),
-    defaultValues: { amount: 100 },
+    defaultValues: { amount: 100, reference: '' },
   });
 
   const handleIdentityCheck = async (values: PhoneFormValues) => {
@@ -90,7 +91,7 @@ const PaymentFlow = () => {
 
   const handlePaymentRequest = async (values: AmountFormValues) => {
     setIsLoading(true);
-    const uniqueReference = uuidv4();
+    const uniqueReference = values.reference || uuidv4();
     setReference(uniqueReference);
     try {
       const response = await fetch('https://lucopay.onrender.com/api/v1/request_payment', {
@@ -157,7 +158,7 @@ const PaymentFlow = () => {
     setReference('');
     setPaymentStatus('');
     phoneForm.reset();
-    amountForm.reset({ amount: 100 });
+    amountForm.reset({ amount: 100, reference: '' });
   }
 
   const renderContent = () => {
@@ -191,35 +192,58 @@ const PaymentFlow = () => {
         );
       case 'amount':
         return (
-           <Form {...amountForm}>
-            <form onSubmit={amountForm.handleSubmit(handlePaymentRequest)} className="space-y-4">
-                <div className="flex items-center gap-3 rounded-md border p-3">
-                    <UserCircle className="h-5 w-5 text-muted-foreground"/>
-                    <p className="text-sm font-medium">{identityName}</p>
+          <>
+            <div className="mb-4">
+              <h2 className="text-xl font-bold">Enter Amount</h2>
+              <p className="text-muted-foreground">Complete the payment for the verified user.</p>
+            </div>
+            <Form {...amountForm}>
+              <form onSubmit={amountForm.handleSubmit(handlePaymentRequest)} className="space-y-4">
+                <div className="flex items-center gap-3 rounded-md border p-3 bg-muted/30">
+                  <UserCircle className="h-8 w-8 text-muted-foreground" />
+                  <div>
+                    <p className="font-semibold text-sm">{identityName}</p>
+                    <p className="text-xs text-muted-foreground">{phone}</p>
+                  </div>
                 </div>
                 <FormField
-                control={amountForm.control}
-                name="amount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Amount</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input type="number" placeholder="100" {...field} className="pl-10" />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="submit" disabled={isLoading} className="w-full">
-                {isLoading ? <LoaderCircle className="animate-spin" /> : <Send className="mr-2" />}
-                Request Payment
-              </Button>
-            </form>
-          </Form>
-        )
+                  control={amountForm.control}
+                  name="amount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Amount</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="100" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={amountForm.control}
+                  name="reference"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Reference (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Auto-generated if empty" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="flex flex-col gap-2 pt-2">
+                  <Button type="submit" disabled={isLoading} className="w-full">
+                    {isLoading ? <LoaderCircle className="animate-spin" /> : 'Proceed to Pay'}
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => setStep('idle')} className="w-full">
+                    Back
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </>
+        );
       case 'status':
         return (
             <div className="flex flex-col items-center justify-center gap-4 text-center">
@@ -422,7 +446,7 @@ export default function SettingsPage() {
                     onOpenChange={setIsRecipientsOpen}
                     className="w-full space-y-2"
                     >
-                     <div className="flex items-center justify-between space-x-4">
+                     <div className="flex items-center justify-between space-x-4 px-1">
                         <h4 className="text-sm font-semibold">
                             Recipients ({subscribers.length})
                         </h4>
@@ -486,5 +510,3 @@ export default function SettingsPage() {
     </>
   );
 }
-
-    
