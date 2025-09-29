@@ -64,6 +64,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { format, addDays } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { cn } from '@/lib/utils';
 
 const voucherSchema = z.object({
   title: z.string().min(1, 'Title is required.'),
@@ -670,6 +671,7 @@ export default function VouchersPage() {
                       />
                     </TableHead>
                     <TableHead>Title</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead>Price</TableHead>
                     <TableHead>Expires</TableHead>
                     <TableHead>Code</TableHead>
@@ -690,6 +692,17 @@ export default function VouchersPage() {
                           />
                         </TableCell>
                         <TableCell className="font-medium">{voucher.title}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                             <span className={cn(
+                                "h-2 w-2 rounded-full",
+                                voucher.status === 'active' && 'bg-green-500',
+                                voucher.status === 'purchased' && 'bg-yellow-500',
+                                voucher.status === 'expired' && 'bg-red-500',
+                             )}></span>
+                             <span className="capitalize">{voucher.status}</span>
+                          </div>
+                        </TableCell>
                         <TableCell>{formattedPrice(voucher.price)}</TableCell>
                         <TableCell>{voucher.expiryDate}</TableCell>
                         <TableCell><Badge variant="outline">{voucher.code}</Badge></TableCell>
@@ -737,7 +750,7 @@ export default function VouchersPage() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={6} className="h-24 text-center">
+                      <TableCell colSpan={7} className="h-24 text-center">
                         No vouchers found for this category.
                       </TableCell>
                     </TableRow>

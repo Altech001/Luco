@@ -3,6 +3,7 @@ import type { LucideIcon, LucideProps } from "lucide-react";
 import type { ForwardRefExoticComponent, RefAttributes } from "react";
 
 export type VoucherCategoryName = 'Luco Day' | 'Luco Week' | 'Luco Month' | 'Member' | 'Promo' | string;
+export type VoucherStatus = 'active' | 'purchased' | 'expired';
 
 export type Voucher = {
   id: string;
@@ -14,6 +15,7 @@ export type Voucher = {
   expiryDate: string;
   price: number;
   isNew?: boolean;
+  status: VoucherStatus;
 };
 
 export type VoucherProfile = {

@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Smartphone, KeyRound, LoaderCircle, TicketIcon, Bot, CheckCircle, UserCircle, Wallet, Send, Home } from 'lucide-react';
+import { Smartphone, KeyRound, LoaderCircle, TicketIcon, Bot, CheckCircle, UserCircle, Wallet, Send, Home, ShieldX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { Voucher } from '@/types';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
+import { updateVoucher } from '@/lib/vouchers';
 
 type PurchaseStep = 'enter-phone' | 'confirm-identity' | 'verify-payment' | 'receipt';
 
@@ -54,6 +55,8 @@ export default function VoucherPurchaseFlow({ voucher, onComplete }: VoucherPurc
     resolver: zodResolver(codeSchema),
     defaultValues: { code: '' },
   });
+  
+  const isVoucherUnavailable = voucher.status === 'purchased' || voucher.status === 'expired';
 
   const handlePhoneSubmit = async (values: z.infer<typeof phoneSchema>) => {
     setIsLoading(true);
@@ -105,22 +108,33 @@ export default function VoucherPurchaseFlow({ voucher, onComplete }: VoucherPurc
 
   const handleVerificationSubmit = async (values: z.infer<typeof codeSchema>) => {
     setIsLoading(true);
-    await new Promise(res => setTimeout(res, 1000)); // Simulate verification
-    if (values.code === '123456') { // Mock OTP
+    try {
+      await new Promise(res => setTimeout(res, 1000)); // Simulate verification
+      if (values.code === '123456') { // Mock OTP
+        await updateVoucher(voucher.id, { status: 'purchased' });
+        setStep('receipt');
+        toast({
+          title: 'Purchase Successful!',
+          description: 'Your voucher is ready.',
+        });
+      } else {
+        codeForm.setError('code', { type: 'manual', message: 'Invalid verification code.' });
+        toast({
+          variant: 'destructive',
+          title: 'Verification Failed',
+          description: 'The code you entered is incorrect.',
+        });
+      }
+    } catch (error) {
+        console.error('Verification failed:', error);
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'An error occurred while completing your purchase.',
+        });
+    }
+    finally {
       setIsLoading(false);
-      setStep('receipt');
-      toast({
-        title: 'Purchase Successful!',
-        description: 'Your voucher is ready.',
-      });
-    } else {
-      setIsLoading(false);
-      codeForm.setError('code', { type: 'manual', message: 'Invalid verification code.' });
-      toast({
-        variant: 'destructive',
-        title: 'Verification Failed',
-        description: 'The code you entered is incorrect.',
-      });
     }
   };
 
@@ -148,6 +162,15 @@ export default function VoucherPurchaseFlow({ voucher, onComplete }: VoucherPurc
               <h2 className="text-lg font-semibold leading-none tracking-tight">Confirm Purchase</h2>
               <p className="text-sm text-muted-foreground">Enter your phone number to purchase the "{voucher.title}" voucher for {formattedPrice}.</p>
             </div>
+             {isVoucherUnavailable && (
+                <div className="my-4 flex items-center gap-4 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
+                    <ShieldX className="h-6 w-6" />
+                    <div>
+                        <h3 className="font-semibold">Voucher Unavailable</h3>
+                        <p className="text-sm">This voucher has already been {voucher.status}.</p>
+                    </div>
+                </div>
+             )}
             <Form {...phoneForm}>
               <form onSubmit={phoneForm.handleSubmit(handlePhoneSubmit)} className="space-y-6 pt-4">
                 <FormField
@@ -159,14 +182,14 @@ export default function VoucherPurchaseFlow({ voucher, onComplete }: VoucherPurc
                       <FormControl>
                         <div className="relative">
                           <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input placeholder="+256 7..." {...field} className="pl-10" />
+                          <Input placeholder="+256 7..." {...field} className="pl-10" disabled={isVoucherUnavailable} />
                         </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button type="submit" className="w-full" disabled={isLoading || isVoucherUnavailable}>
                     {isLoading ? <LoaderCircle className="animate-spin" /> : <KeyRound className="mr-2" />}
                     Proceed to Verify
                 </Button>

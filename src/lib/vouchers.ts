@@ -3,11 +3,12 @@ import { collection, getDocs, getDoc, query, orderBy, addDoc, doc, deleteDoc, up
 import { db } from './firebase';
 import type { Voucher, VoucherCategoryName, VoucherProfile, NewVoucherProfileData } from '@/types';
 
-type NewVoucherData = Omit<Voucher, 'id'>;
+type NewVoucherData = Omit<Voucher, 'id' | 'status'>;
 
 export async function addVoucher(voucherData: NewVoucherData): Promise<void> {
   await addDoc(collection(db, 'vouchers'), {
     ...voucherData,
+    status: 'active', // Default status
     createdAt: Timestamp.now(),
   });
 }
@@ -20,6 +21,7 @@ export async function batchAddVouchers(vouchersData: NewVoucherData[]): Promise<
     const docRef = doc(vouchersRef);
     batch.set(docRef, {
       ...voucher,
+      status: 'active',
       createdAt: Timestamp.now(),
     });
   });
@@ -36,6 +38,12 @@ export async function getVouchers(): Promise<Voucher[]> {
   const vouchers: Voucher[] = [];
   querySnapshot.forEach((doc) => {
     const data = doc.data();
+    let status = data.status || 'active';
+    const expiryDate = new Date(data.expiryDate);
+    if (status === 'active' && expiryDate < new Date()) {
+      status = 'expired';
+    }
+    
     vouchers.push({
       id: doc.id,
       title: data.title,
@@ -46,6 +54,7 @@ export async function getVouchers(): Promise<Voucher[]> {
       expiryDate: data.expiryDate,
       code: data.code,
       isNew: data.isNew || false,
+      status: status,
     });
   });
 
@@ -58,6 +67,12 @@ export async function getVoucherById(id: string): Promise<Voucher | undefined> {
 
   if (docSnap.exists()) {
     const data = docSnap.data();
+     let status = data.status || 'active';
+    const expiryDate = new Date(data.expiryDate);
+    if (status === 'active' && expiryDate < new Date()) {
+      status = 'expired';
+    }
+    
     return {
       id: docSnap.id,
       title: data.title,
@@ -68,13 +83,14 @@ export async function getVoucherById(id: string): Promise<Voucher | undefined> {
       expiryDate: data.expiryDate,
       code: data.code,
       isNew: data.isNew || false,
+      status: status,
     }
   } else {
     return undefined;
   }
 }
 
-export async function updateVoucher(id: string, data: Partial<NewVoucherData>): Promise<void> {
+export async function updateVoucher(id: string, data: Partial<NewVoucherData & { status?: string }>): Promise<void> {
   const voucherRef = doc(db, 'vouchers', id);
   await updateDoc(voucherRef, data);
 }
