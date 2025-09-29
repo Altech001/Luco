@@ -58,10 +58,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           href={item.href}
           onClick={() => isMobile && setIsMobileNavOpen(false)}
           className={cn(
-            'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
-            pathname === item.href && 'bg-accent text-primary'
+            'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary relative',
+            pathname === item.href && 'font-bold text-primary',
           )}
         >
+          {pathname === item.href && <div className="absolute left-0 top-0 h-full w-1 bg-destructive rounded-r-full"></div>}
           <item.icon className="h-4 w-4" />
           {item.label}
         </Link>
