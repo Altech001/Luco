@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Ticket, Users, Bell, DollarSign, LoaderCircle } from 'lucide-react';
 import { getVouchers } from '@/lib/vouchers';
 import { getMembers } from '@/lib/members';
