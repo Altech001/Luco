@@ -230,62 +230,60 @@ export default function SettingsPage() {
            smsForm.reset();
          }
        }}>
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="max-w-md w-[90vw] rounded-lg">
           <DialogHeader>
             <DialogTitle>Send Bulk SMS</DialogTitle>
             <DialogDescription>
               Compose a message to send to all your subscribers.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
-              <Form {...smsForm}>
-                <form id="sms-form" onSubmit={smsForm.handleSubmit(handleSendSms)} className="space-y-4">
-                    <FormField
-                    control={smsForm.control}
-                    name="message"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Message</FormLabel>
-                        <FormControl>
-                            <Textarea
-                                placeholder="Type your promotional message here..."
-                                className="resize-none"
-                                rows={8}
-                                {...field}
-                            />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                </form>
-              </Form>
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium flex items-center gap-2">
-                  <Users className="h-4 w-4"/> Recipients ({subscribers.length})
-                </h3>
-                <ScrollArea className="h-48 w-full rounded-md border">
-                    <div className="p-4 text-sm">
-                        {subscribers.length > 0 ? (
-                          <ul className="space-y-2">
-                              {subscribers.map(sub => (
-                                <li key={sub.id} className="text-muted-foreground">{sub.phone}</li>
-                              ))}
-                          </ul>
-                        ) : (
-                          <p className="text-muted-foreground text-center">No subscribers found.</p>
-                        )}
-                    </div>
-                </ScrollArea>
-              </div>
-          </div>
+            <Form {...smsForm}>
+              <form id="sms-form" onSubmit={smsForm.handleSubmit(handleSendSms)} className="space-y-6 pt-2">
+                  <FormField
+                  control={smsForm.control}
+                  name="message"
+                  render={({ field }) => (
+                      <FormItem>
+                      <FormLabel>Message</FormLabel>
+                      <FormControl>
+                          <Textarea
+                              placeholder="Type your promotional message here..."
+                              className="resize-none"
+                              rows={5}
+                              {...field}
+                          />
+                      </FormControl>
+                      <FormMessage />
+                      </FormItem>
+                  )}
+                  />
+                  <div className="space-y-2">
+                      <h3 className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+                          <Users className="h-4 w-4"/> Recipients ({subscribers.length})
+                      </h3>
+                      <ScrollArea className="h-40 w-full rounded-md border">
+                          <div className="p-4 text-sm">
+                              {subscribers.length > 0 ? (
+                                <ul className="space-y-2">
+                                    {subscribers.map(sub => (
+                                      <li key={sub.id} className="text-muted-foreground">{sub.phone}</li>
+                                    ))}
+                                </ul>
+                              ) : (
+                                <p className="text-muted-foreground text-center py-4">No subscribers found.</p>
+                              )}
+                          </div>
+                      </ScrollArea>
+                  </div>
+              </form>
+            </Form>
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline">
                 Cancel
               </Button>
             </DialogClose>
-            <Button type="submit" form="sms-form" disabled={isSubmitting}>
+            <Button type="submit" form="sms-form" disabled={isSubmitting || subscribers.length === 0}>
               {isSubmitting ? <LoaderCircle className="animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
               Send to {subscribers.length} Subscribers
             </Button>
