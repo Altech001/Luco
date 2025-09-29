@@ -1,6 +1,7 @@
+
 'use client';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import {
   Carousel,
   CarouselContent,
@@ -9,11 +10,43 @@ import {
   CarouselPrevious,
 } from '@/components/ui/carousel';
 import { Card, CardContent } from '@/components/ui/card';
-import Autoplay from "embla-carousel-autoplay"
-
+import { Skeleton } from '@/components/ui/skeleton';
+import Autoplay from "embla-carousel-autoplay";
+import { getBanners } from '@/lib/banners';
+import type { Banner } from '@/types';
 
 export default function PromotionalBanners() {
-  const banners = PlaceHolderImages.filter(img => img.id.startsWith('banner-'));
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchBanners = async () => {
+      setIsLoading(true);
+      try {
+        const bannersData = await getBanners();
+        setBanners(bannersData);
+      } catch (error) {
+        console.error("Failed to fetch banners:", error);
+        // Optionally, set some default banners or an error state
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchBanners();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="w-full">
+        <Skeleton className="aspect-[2/1] sm:aspect-[3/1] w-full rounded-lg" />
+      </div>
+    );
+  }
+
+  if (banners.length === 0) {
+    return null; // Don't render the carousel if there are no banners
+  }
 
   return (
     <div className="w-full">
@@ -28,7 +61,7 @@ export default function PromotionalBanners() {
         className="w-full"
       >
         <CarouselContent>
-          {banners.map(banner => (
+          {banners.map((banner, index) => (
             <CarouselItem key={banner.id}>
               <Card className="overflow-hidden">
                 <CardContent className="relative aspect-[2/1] sm:aspect-[3/1] p-0">
@@ -38,7 +71,7 @@ export default function PromotionalBanners() {
                     fill
                     className="object-cover"
                     data-ai-hint={banner.imageHint}
-                    priority={banner.id === 'banner-1'}
+                    priority={index === 0}
                   />
                   <div className="absolute inset-0 bg-black/30" />
                 </CardContent>

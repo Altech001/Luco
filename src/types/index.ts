@@ -1,3 +1,4 @@
+
 import type { LucideIcon, LucideProps } from "lucide-react";
 import type { ForwardRefExoticComponent, RefAttributes } from "react";
 
@@ -18,4 +19,11 @@ export type Voucher = {
 export type VoucherCategory = {
     name: 'All' | VoucherCategoryName;
     icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>;
+};
+
+export type Banner = {
+  id: string;
+  imageUrl: string;
+  description: string;
+  imageHint: string;
 };
