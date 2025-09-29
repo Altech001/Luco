@@ -119,30 +119,33 @@ export async function getVouchersByPhone(phone: string): Promise<Voucher[]> {
     const vouchersRef = collection(db, 'vouchers');
     const q = query(
         vouchersRef,
-        where('purchasedBy', '==', phone),
-        where('status', '==', 'purchased'),
-        orderBy('purchasedAt', 'desc')
+        where('purchasedBy', '==', phone)
     );
     const querySnapshot = await getDocs(q);
 
-    const vouchers: Voucher[] = [];
+    let vouchers: Voucher[] = [];
     querySnapshot.forEach((doc) => {
         const data = doc.data();
-        vouchers.push({
-            id: doc.id,
-            title: data.title,
-            description: data.description,
-            category: data.category as VoucherCategoryName,
-            price: data.price,
-            discount: data.discount,
-            expiryDate: data.expiryDate,
-            code: data.code,
-            isNew: data.isNew || false,
-            status: 'purchased',
-            purchasedBy: data.purchasedBy,
-            purchasedAt: data.purchasedAt?.toDate(),
-        });
+        if (data.status === 'purchased') {
+            vouchers.push({
+                id: doc.id,
+                title: data.title,
+                description: data.description,
+                category: data.category as VoucherCategoryName,
+                price: data.price,
+                discount: data.discount,
+                expiryDate: data.expiryDate,
+                code: data.code,
+                isNew: data.isNew || false,
+                status: 'purchased',
+                purchasedBy: data.purchasedBy,
+                purchasedAt: data.purchasedAt?.toDate(),
+            });
+        }
     });
+
+    // Sort by purchasedAt date in descending order
+    vouchers.sort((a, b) => (b.purchasedAt?.getTime() || 0) - (a.purchasedAt?.getTime() || 0));
 
     return vouchers;
 }
