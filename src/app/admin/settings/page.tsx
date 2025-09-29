@@ -150,7 +150,7 @@ export default function SettingsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Form>
+            <Form {...adminCredsForm}>
               <FormItem className="space-y-3">
                 <FormLabel>Theme</FormLabel>
                 <FormControl>
