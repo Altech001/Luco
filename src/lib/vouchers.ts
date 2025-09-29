@@ -32,13 +32,7 @@ export async function batchAddVouchers(vouchersData: NewVoucherData[]): Promise<
 
 export async function getVouchers(includeInactive = false): Promise<Voucher[]> {
   const vouchersRef = collection(db, 'vouchers');
-  
-  let q;
-  if (includeInactive) {
-    q = query(vouchersRef, orderBy('createdAt', 'desc'));
-  } else {
-    q = query(vouchersRef, where('status', '==', 'active'), orderBy('createdAt', 'desc'));
-  }
+  const q = query(vouchersRef, orderBy('createdAt', 'desc'));
   
   const querySnapshot = await getDocs(q);
   
@@ -49,10 +43,13 @@ export async function getVouchers(includeInactive = false): Promise<Voucher[]> {
     
     // Convert Firestore Timestamp to Date if necessary, then to string for comparison
     const expiryDateStr = data.expiryDate;
-    const expiryDate = new Date(expiryDateStr);
-
-    if (status === 'active' && expiryDate < new Date()) {
-      status = 'expired';
+    try {
+      const expiryDate = new Date(expiryDateStr);
+      if (status === 'active' && expiryDate < new Date()) {
+        status = 'expired';
+      }
+    } catch (e) {
+      // Ignore invalid date strings
     }
     
     // If we are not including inactive, and the status has been determined as expired, skip it.
@@ -84,9 +81,13 @@ export async function getVoucherById(id: string): Promise<Voucher | undefined> {
   if (docSnap.exists()) {
     const data = docSnap.data();
      let status = data.status || 'active';
-    const expiryDate = new Date(data.expiryDate);
-    if (status === 'active' && expiryDate < new Date()) {
-      status = 'expired';
+    try {
+        const expiryDate = new Date(data.expiryDate);
+        if (status === 'active' && expiryDate < new Date()) {
+          status = 'expired';
+        }
+    } catch(e) {
+        // Ignore invalid date strings
     }
     
     return {
