@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { LoaderCircle, Wallet, Sun, Moon, Laptop, Mail, Bell, Send, Users } from 'lucide-react';
+import { LoaderCircle, Wallet, Sun, Moon, Laptop, Mail, Bell, Send, Users, ChevronsUpDown } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
@@ -28,6 +28,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { getSubscribers, sendSms } from '@/lib/subscribers';
 import type { Subscriber } from '@/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 const paymentSchema = z.object({
   amount: z.coerce.number().min(1, 'Please enter an amount.'),
@@ -45,6 +46,7 @@ export default function SettingsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { theme, setTheme } = useTheme();
   const [isSmsDialogOpen, setIsSmsDialogOpen] = useState(false);
+  const [isRecipientsOpen, setIsRecipientsOpen] = useState(false);
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [isSmsEnabled, setIsSmsEnabled] = useState(false);
 
@@ -238,7 +240,38 @@ export default function SettingsPage() {
             </DialogDescription>
           </DialogHeader>
             <Form {...smsForm}>
-              <form id="sms-form" onSubmit={smsForm.handleSubmit(handleSendSms)} className="space-y-6 pt-2">
+              <form id="sms-form" onSubmit={smsForm.handleSubmit(handleSendSms)} className="space-y-4 pt-2">
+                 <Collapsible
+                    open={isRecipientsOpen}
+                    onOpenChange={setIsRecipientsOpen}
+                    className="space-y-2"
+                    >
+                    <CollapsibleTrigger asChild>
+                        <Button variant="ghost" className="w-full justify-between px-2">
+                         <div className="flex items-center gap-2 text-muted-foreground">
+                            <Users className="h-4 w-4"/> 
+                            <span className="font-medium">Recipients ({subscribers.length})</span>
+                         </div>
+                        <ChevronsUpDown className="h-4 w-4" />
+                        </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                        <ScrollArea className="h-40 w-full rounded-md border">
+                            <div className="p-4 text-sm">
+                                {subscribers.length > 0 ? (
+                                <ul className="space-y-2">
+                                    {subscribers.map(sub => (
+                                    <li key={sub.id} className="text-muted-foreground">{sub.phone}</li>
+                                    ))}
+                                </ul>
+                                ) : (
+                                <p className="text-muted-foreground text-center py-4">No subscribers found.</p>
+                                )}
+                            </div>
+                        </ScrollArea>
+                    </CollapsibleContent>
+                    </Collapsible>
+
                   <FormField
                   control={smsForm.control}
                   name="message"
@@ -257,24 +290,6 @@ export default function SettingsPage() {
                       </FormItem>
                   )}
                   />
-                  <div className="space-y-2">
-                      <h3 className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
-                          <Users className="h-4 w-4"/> Recipients ({subscribers.length})
-                      </h3>
-                      <ScrollArea className="h-40 w-full rounded-md border">
-                          <div className="p-4 text-sm">
-                              {subscribers.length > 0 ? (
-                                <ul className="space-y-2">
-                                    {subscribers.map(sub => (
-                                      <li key={sub.id} className="text-muted-foreground">{sub.phone}</li>
-                                    ))}
-                                </ul>
-                              ) : (
-                                <p className="text-muted-foreground text-center py-4">No subscribers found.</p>
-                              )}
-                          </div>
-                      </ScrollArea>
-                  </div>
               </form>
             </Form>
           <DialogFooter>
