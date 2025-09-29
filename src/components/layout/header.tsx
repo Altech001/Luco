@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { Bell, Ticket, MessageSquare } from 'lucide-react';
+import { Bell, TicketPercent, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -40,7 +40,7 @@ export default function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-2 sm:gap-3">
-          <Ticket className="h-7 w-7 text-[hsl(var(--highlight))]" />
+          <TicketPercent className="h-7 w-7 text-[hsl(var(--highlight))]" />
           <h1 className="font-headline text-xl sm:text-2xl font-bold tracking-tight">
             Luco
           </h1>

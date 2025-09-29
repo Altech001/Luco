@@ -6,7 +6,7 @@ import { vouchers } from '@/lib/data';
 import type { Voucher } from '@/types';
 import VoucherPurchaseFlow from '@/components/voucher-purchase-flow';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Ticket } from 'lucide-react';
+import { ArrowLeft, TicketPercent } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function PurchasePage() {
@@ -36,7 +36,7 @@ export default function PurchasePage() {
               <span className="sr-only">Go Back</span>
             </Button>
              <div className="flex items-center gap-2 sm:gap-3">
-                <Ticket className="h-7 w-7 text-[hsl(var(--highlight))]" />
+                <TicketPercent className="h-7 w-7 text-[hsl(var(--highlight))]" />
                 <h1 className="font-headline text-xl sm:text-2xl font-bold tracking-tight">
                     Luco
                 </h1>
