@@ -365,7 +365,7 @@ export default function VouchersPage() {
     setIsLoading(true);
     try {
       const [vouchersData, profilesData] = await Promise.all([
-        getVouchers(),
+        getVouchers(true),
         getVoucherProfiles()
       ]);
       setVouchers(vouchersData);

@@ -1,5 +1,5 @@
 
-import { collection, getDocs, getDoc, query, orderBy, addDoc, doc, deleteDoc, updateDoc, Timestamp, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, getDoc, query, orderBy, addDoc, doc, deleteDoc, updateDoc, Timestamp, writeBatch, where } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Voucher, VoucherCategoryName, VoucherProfile, NewVoucherProfileData } from '@/types';
 
@@ -30,20 +30,36 @@ export async function batchAddVouchers(vouchersData: NewVoucherData[]): Promise<
 }
 
 
-export async function getVouchers(): Promise<Voucher[]> {
+export async function getVouchers(includeInactive = false): Promise<Voucher[]> {
   const vouchersRef = collection(db, 'vouchers');
-  const q = query(vouchersRef, orderBy('createdAt', 'desc'));
+  
+  let q;
+  if (includeInactive) {
+    q = query(vouchersRef, orderBy('createdAt', 'desc'));
+  } else {
+    q = query(vouchersRef, where('status', '==', 'active'), orderBy('createdAt', 'desc'));
+  }
+  
   const querySnapshot = await getDocs(q);
   
   const vouchers: Voucher[] = [];
   querySnapshot.forEach((doc) => {
     const data = doc.data();
     let status = data.status || 'active';
-    const expiryDate = new Date(data.expiryDate);
+    
+    // Convert Firestore Timestamp to Date if necessary, then to string for comparison
+    const expiryDateStr = data.expiryDate;
+    const expiryDate = new Date(expiryDateStr);
+
     if (status === 'active' && expiryDate < new Date()) {
       status = 'expired';
     }
     
+    // If we are not including inactive, and the status has been determined as expired, skip it.
+    if (!includeInactive && status !== 'active') {
+        return;
+    }
+
     vouchers.push({
       id: doc.id,
       title: data.title,
