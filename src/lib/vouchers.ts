@@ -57,7 +57,7 @@ export async function getVouchers(includeInactive = false): Promise<Voucher[]> {
     }
     
     // If we are not including inactive, and the status has been determined as expired, skip it.
-    if (!includeInactive && status !== 'active') {
+    if (!includeInactive && status !== 'active' && status !== 'purchased') {
         return;
     }
 
@@ -150,7 +150,7 @@ export async function getVouchersByPhone(phone: string): Promise<Voucher[]> {
     return vouchers;
 }
 
-export async function updateVoucher(id: string, data: Partial<NewVoucherData & { status?: string, purchasedBy?: string, purchasedAt?: Timestamp }>): Promise<void> {
+export async function updateVoucher(id: string, data: Partial<Voucher>): Promise<void> {
   const voucherRef = doc(db, 'vouchers', id);
   await updateDoc(voucherRef, data);
 }
