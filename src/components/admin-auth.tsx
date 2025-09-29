@@ -14,7 +14,7 @@ import { TicketPercent, User, Lock, LoaderCircle, Eye, EyeOff, Hand } from 'luci
 import Link from 'next/link';
 
 const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email address.'),
+  username: z.string().min(1, 'Username is required.'),
   password: z.string().min(1, 'Password is required.'),
 });
 
@@ -32,7 +32,7 @@ export default function AdminAuth({ onLoginSuccess }: AdminAuthProps) {
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: '',
+      username: '',
       password: '',
     },
   });
@@ -41,8 +41,7 @@ export default function AdminAuth({ onLoginSuccess }: AdminAuthProps) {
     setIsLoading(true);
     // Simulate API call
     setTimeout(() => {
-      // In a real app, you would use email. For this demo, we check against admin/password.
-      if (values.email === 'admin@example.com' && values.password === 'password') {
+      if (values.username === 'admin' && values.password === 'password') {
         toast({
           title: 'Login Successful',
           description: 'Welcome back, Albertine!',
@@ -52,7 +51,7 @@ export default function AdminAuth({ onLoginSuccess }: AdminAuthProps) {
         toast({
           variant: 'destructive',
           title: 'Login Failed',
-          description: 'Invalid email or password.',
+          description: 'Invalid username or password.',
         });
         form.reset();
       }
@@ -86,13 +85,13 @@ export default function AdminAuth({ onLoginSuccess }: AdminAuthProps) {
             <form onSubmit={form.handleSubmit(handleLogin)} className="space-y-4">
               <FormField
                 control={form.control}
-                name="email"
+                name="username"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-muted-foreground">Email Address</FormLabel>
+                    <FormLabel className="text-muted-foreground">Username</FormLabel>
                     <FormControl>
                        <div className="relative">
-                        <Input placeholder="admin@example.com" {...field} />
+                        <Input placeholder="admin" {...field} />
                       </div>
                     </FormControl>
                     <FormMessage />
