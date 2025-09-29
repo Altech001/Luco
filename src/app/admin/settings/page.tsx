@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { LoaderCircle, Wallet, Sun, Moon, Laptop, Mail, Bell, Send, Users, ChevronsUpDown } from 'lucide-react';
+import { LoaderCircle, Sun, Moon, Laptop, Mail, Bell, Send, Users, ChevronsUpDown, Code, Sparkles } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
@@ -29,17 +29,14 @@ import { getSubscribers, sendSms } from '@/lib/subscribers';
 import type { Subscriber } from '@/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { generateIntegrationCode, type GenerateIntegrationCodeOutput } from '@/ai/flows/generate-integration-code';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-const paymentSchema = z.object({
-  amount: z.coerce.number().min(1, 'Please enter an amount.'),
+const integrationSchema = z.object({
+  platform: z.string().min(1, 'Please select a platform.'),
+  description: z.string().min(10, 'Please provide a detailed description.'),
 });
-type PaymentFormValues = z.infer<typeof paymentSchema>;
-
-const bulkSmsSchema = z.object({
-  message: z.string().min(1, 'Message cannot be empty.'),
-});
-type BulkSmsFormValues = z.infer<typeof bulkSmsSchema>;
-
+type IntegrationFormValues = z.infer<typeof integrationSchema>;
 
 export default function SettingsPage() {
   const { toast } = useToast();
@@ -49,19 +46,19 @@ export default function SettingsPage() {
   const [isRecipientsOpen, setIsRecipientsOpen] = useState(false);
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [isSmsEnabled, setIsSmsEnabled] = useState(false);
+  const [integrationResult, setIntegrationResult] = useState<GenerateIntegrationCodeOutput | null>(null);
 
-  const paymentForm = useForm<PaymentFormValues>({
-    resolver: zodResolver(paymentSchema),
+  const integrationForm = useForm<IntegrationFormValues>({
+    resolver: zodResolver(integrationSchema),
     defaultValues: {
-      amount: 0,
+      platform: 'JavaScript',
+      description: '',
     },
   });
 
-  const smsForm = useForm<BulkSmsFormValues>({
-    resolver: zodResolver(bulkSmsSchema),
-    defaultValues: {
-      message: '',
-    },
+  const smsForm = useForm<{ message: string }>({
+    resolver: zodResolver(z.object({ message: z.string().min(1, 'Message cannot be empty.') })),
+    defaultValues: { message: '' },
   });
 
   useEffect(() => {
@@ -72,28 +69,29 @@ export default function SettingsPage() {
           setSubscribers(subs);
         } catch (error) {
           console.error("Failed to fetch subscribers:", error);
-          toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'Could not fetch subscriber list.',
-          });
+          toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch subscriber list.' });
         }
       };
       fetchSubscribers();
     }
   }, [isSmsDialogOpen, toast]);
 
-  const handlePaymentSubmit = (values: PaymentFormValues) => {
+  const handleIntegrationSubmit = async (values: IntegrationFormValues) => {
     setIsSubmitting(true);
-    console.log('Payment submitted:', values);
-    setTimeout(() => {
+    setIntegrationResult(null);
+    try {
+      const result = await generateIntegrationCode(values);
+      setIntegrationResult(result);
       toast({
-        title: 'Payment Processed',
-        description: `Amount of ${values.amount} has been processed.`,
+        title: 'Code Generated!',
+        description: `Integration snippet for ${values.platform} is ready.`,
       });
-      paymentForm.reset();
+    } catch (error) {
+      console.error('Error generating integration code:', error);
+      toast({ variant: 'destructive', title: 'Generation Failed', description: 'Could not generate the integration code.' });
+    } finally {
       setIsSubmitting(false);
-    }, 1000);
+    }
   };
   
   const handleSmsToggle = (checked: boolean) => {
@@ -103,7 +101,7 @@ export default function SettingsPage() {
     }
   }
 
-  const handleSendSms = async (values: BulkSmsFormValues) => {
+  const handleSendSms = async (values: { message: string }) => {
     setIsSubmitting(true);
     try {
       await sendSms(subscribers.map(s => s.phone), values.message);
@@ -116,16 +114,11 @@ export default function SettingsPage() {
       setIsSmsEnabled(false);
     } catch (error) {
       console.error("Failed to send bulk SMS:", error);
-      toast({
-        variant: 'destructive',
-        title: 'Send Failed',
-        description: 'There was an error sending the bulk SMS.',
-      });
+      toast({ variant: 'destructive', title: 'Send Failed', description: 'There was an error sending the bulk SMS.' });
     } finally {
       setIsSubmitting(false);
     }
   };
-
 
   return (
     <>
@@ -137,35 +130,75 @@ export default function SettingsPage() {
       <div className="grid gap-8 md:grid-cols-2">
         <Card>
             <CardHeader>
-                <CardTitle>Add Payment</CardTitle>
+                <CardTitle>Integration Code Generator</CardTitle>
                 <CardDescription>
-                    Enter the amount to process the payment.
+                    Use AI to generate payment integration code for your platform.
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                <Form {...paymentForm}>
-                    <form onSubmit={paymentForm.handleSubmit(handlePaymentSubmit)} className="space-y-4 max-w-sm">
+                <Form {...integrationForm}>
+                    <form onSubmit={integrationForm.handleSubmit(handleIntegrationSubmit)} className="space-y-4">
+                       <FormField
+                          control={integrationForm.control}
+                          name="platform"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Platform</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select a language or platform" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="JavaScript">JavaScript</SelectItem>
+                                  <SelectItem value="Python">Python</SelectItem>
+                                  <SelectItem value="React">React</SelectItem>
+                                  <SelectItem value="cURL">cURL</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                         <FormField
-                        control={paymentForm.control}
-                        name="amount"
+                        control={integrationForm.control}
+                        name="description"
                         render={({ field }) => (
                             <FormItem>
-                            <FormLabel>Amount</FormLabel>
+                            <FormLabel>What do you want to achieve?</FormLabel>
                             <FormControl>
-                                <div className="relative">
-                                    <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                    <Input type="number" placeholder="Enter amount" {...field} className="pl-10" />
-                                </div>
+                                <Textarea
+                                    placeholder="e.g., 'A function to verify a user and then request a payment of 5000.'"
+                                    className="resize-none"
+                                    rows={3}
+                                    {...field}
+                                />
                             </FormControl>
                             <FormMessage />
                             </FormItem>
                         )}
                         />
                         <Button type="submit" disabled={isSubmitting}>
-                        {isSubmitting ? <LoaderCircle className="animate-spin" /> : 'Process Payment'}
+                        {isSubmitting ? <LoaderCircle className="animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                         Generate Code
                         </Button>
                     </form>
                 </Form>
+                 {integrationResult && (
+                  <div className="mt-6 space-y-4">
+                      <div>
+                          <h3 className="font-semibold mb-2 flex items-center gap-2"><Code className="h-5 w-5"/> Code Snippet</h3>
+                          <pre className="p-4 rounded-md bg-muted text-sm overflow-x-auto">
+                              <code>{integrationResult.codeSnippet}</code>
+                          </pre>
+                      </div>
+                      <div>
+                          <h3 className="font-semibold mb-2">Explanation</h3>
+                          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{integrationResult.explanation}</p>
+                      </div>
+                  </div>
+                )}
             </CardContent>
         </Card>
         <Card>
