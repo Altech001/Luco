@@ -137,18 +137,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             ))}
         </SidebarContent>
         <SidebarFooter className='p-2'>
-             <SidebarMenu>
+             <SidebarMenu className="grid grid-cols-2 gap-1">
                 <SidebarMenuItem>
                     <SidebarMenuButton onClick={handleLogout} tooltip="Logout">
                         <Power/>
-                        <span>Logout</span>
+                        <span className="group-data-[collapsible=icon]:hidden">Logout</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                     <SidebarMenuButton asChild tooltip="Go to App">
                         <Link href="/">
                             <Home/>
-                            <span>Go to App</span>
+                            <span className="group-data-[collapsible=icon]:hidden">Go to App</span>
                         </Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
