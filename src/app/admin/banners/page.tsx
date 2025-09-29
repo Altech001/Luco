@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, LoaderCircle, Image as ImageIcon, FileText, Bot, MoreHorizontal, Pencil, Trash2, Eye } from 'lucide-react';
+import { PlusCircle, LoaderCircle, Image as ImageIcon, FileText, Bot, MoreHorizontal, Pencil, Trash2, Eye, Video } from 'lucide-react';
 import Image from 'next/image';
 import { collection, addDoc, getDocs, Timestamp, doc, updateDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -58,6 +58,7 @@ const bannerSchema = z.object({
   imageUrl: z.string().url('Please enter a valid image URL.'),
   description: z.string().min(1, 'Description is required.'),
   imageHint: z.string().min(1, 'AI hint is required.'),
+  videoUrl: z.string().url('Please enter a valid video URL.').optional().or(z.literal('')),
 });
 
 type BannerFormValues = z.infer<typeof bannerSchema>;
@@ -79,6 +80,7 @@ function BannerForm({
       imageUrl: '',
       description: '',
       imageHint: '',
+      videoUrl: '',
     },
   });
 
@@ -95,11 +97,27 @@ function BannerForm({
           name="imageUrl"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Image URL</FormLabel>
+              <FormLabel>Image URL (Fallback)</FormLabel>
               <FormControl>
                 <div className="relative">
                   <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input placeholder="https://images.unsplash.com/..." {...field} className="pl-10" />
+                </div>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="videoUrl"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Video URL (Optional)</FormLabel>
+              <FormControl>
+                <div className="relative">
+                  <Video className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="https://www.youtube.com/watch?v=..." {...field} className="pl-10" />
                 </div>
               </FormControl>
               <FormMessage />
@@ -127,7 +145,7 @@ function BannerForm({
           name="imageHint"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>AI Hint</FormLabel>
+              <FormLabel>AI Hint (for image generation)</FormLabel>
               <FormControl>
                 <div className="relative">
                   <Bot className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -291,8 +309,9 @@ export default function BannersPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="hidden w-[100px] sm:table-cell">Image</TableHead>
+                    <TableHead className="hidden w-[100px] sm:table-cell">Preview</TableHead>
                     <TableHead>Description</TableHead>
+                    <TableHead>Type</TableHead>
                     <TableHead className="hidden md:table-cell">AI Hint</TableHead>
                     <TableHead>
                       <span className="sr-only">Actions</span>
@@ -313,6 +332,19 @@ export default function BannersPage() {
                           />
                         </TableCell>
                         <TableCell className="font-medium">{banner.description}</TableCell>
+                         <TableCell>
+                          {banner.videoUrl ? (
+                            <div className="flex items-center gap-2">
+                              <Video className="h-4 w-4 text-muted-foreground" />
+                              <span>Video</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                              <span>Image</span>
+                            </div>
+                          )}
+                        </TableCell>
                         <TableCell className="hidden md:table-cell">{banner.imageHint}</TableCell>
                         <TableCell>
                            <AlertDialog>
@@ -325,7 +357,7 @@ export default function BannersPage() {
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                  <DropdownMenuItem onSelect={() => window.open(banner.imageUrl, '_blank')}>
+                                  <DropdownMenuItem onSelect={() => window.open(banner.videoUrl || banner.imageUrl, '_blank')}>
                                     <Eye className="mr-2 h-4 w-4"/> Preview
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
@@ -363,7 +395,7 @@ export default function BannersPage() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={4} className="h-24 text-center">
+                      <TableCell colSpan={5} className="h-24 text-center">
                         No banners found.
                       </TableCell>
                     </TableRow>

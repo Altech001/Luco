@@ -16,6 +16,7 @@ export async function getBanners(): Promise<Banner[]> {
       imageUrl: data.imageUrl,
       description: data.description,
       imageHint: data.imageHint,
+      videoUrl: data.videoUrl,
     });
   });
 

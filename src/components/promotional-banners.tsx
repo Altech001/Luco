@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import {
   Carousel,
@@ -15,6 +15,23 @@ import Autoplay from "embla-carousel-autoplay";
 import { getBanners } from '@/lib/banners';
 import type { Banner } from '@/types';
 
+function getYouTubeEmbedUrl(url: string): string | null {
+  let videoId = null;
+  const urlParts = new URL(url);
+  
+  if (urlParts.hostname === 'youtu.be') {
+    videoId = urlParts.pathname.slice(1);
+  } else if (urlParts.hostname === 'www.youtube.com' || urlParts.hostname === 'youtube.com') {
+    if (urlParts.pathname === '/watch') {
+      videoId = urlParts.searchParams.get('v');
+    } else if (urlParts.pathname.startsWith('/embed/')) {
+      videoId = urlParts.pathname.split('/embed/')[1];
+    }
+  }
+  
+  return videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&controls=0` : null;
+}
+
 export default function PromotionalBanners() {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -27,7 +44,6 @@ export default function PromotionalBanners() {
         setBanners(bannersData);
       } catch (error) {
         console.error("Failed to fetch banners:", error);
-        // Optionally, set some default banners or an error state
       } finally {
         setIsLoading(false);
       }
@@ -35,17 +51,22 @@ export default function PromotionalBanners() {
 
     fetchBanners();
   }, []);
+  
+  const bannerItems = useMemo(() => banners.map(banner => {
+    const embedUrl = banner.videoUrl ? getYouTubeEmbedUrl(banner.videoUrl) : null;
+    return { ...banner, embedUrl };
+  }), [banners]);
 
   if (isLoading) {
     return (
       <div className="w-full">
-        <Skeleton className="aspect-[2/1] sm:aspect-[3/1] w-full rounded-lg" />
+        <Skeleton className="aspect-video sm:aspect-[3/1] w-full rounded-lg" />
       </div>
     );
   }
 
-  if (banners.length === 0) {
-    return null; // Don't render the carousel if there are no banners
+  if (bannerItems.length === 0) {
+    return null;
   }
 
   return (
@@ -54,25 +75,36 @@ export default function PromotionalBanners() {
         opts={{ loop: true }}
         plugins={[
             Autoplay({
-              delay: 5000,
+              delay: 7000,
               stopOnInteraction: true,
             }),
         ]}
         className="w-full"
       >
         <CarouselContent>
-          {banners.map((banner, index) => (
+          {bannerItems.map((banner, index) => (
             <CarouselItem key={banner.id}>
               <Card className="overflow-hidden">
-                <CardContent className="relative aspect-[2/1] sm:aspect-[3/1] p-0">
-                  <Image
-                    src={banner.imageUrl}
-                    alt={banner.description}
-                    fill
-                    className="object-cover"
-                    data-ai-hint={banner.imageHint}
-                    priority={index === 0}
-                  />
+                <CardContent className="relative aspect-video sm:aspect-[3/1] p-0">
+                  {banner.embedUrl ? (
+                     <iframe
+                        src={banner.embedUrl}
+                        title={banner.description}
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        className="w-full h-full"
+                      ></iframe>
+                  ) : (
+                    <Image
+                      src={banner.imageUrl}
+                      alt={banner.description}
+                      fill
+                      className="object-cover"
+                      data-ai-hint={banner.imageHint}
+                      priority={index === 0}
+                    />
+                  )}
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center p-4">
                     <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white text-center shadow-lg">
                         {banner.description}

@@ -42,6 +42,7 @@ export type Banner = {
   imageUrl: string;
   description: string;
   imageHint: string;
+  videoUrl?: string;
 };
 
 export type Subscriber = {
