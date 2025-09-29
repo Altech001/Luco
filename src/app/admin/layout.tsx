@@ -10,13 +10,13 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { Lock, LogIn, User, LayoutDashboard, LogOut, Ticket, Users, BarChart, Settings, Home, TicketPercent, Menu, LoaderCircle, Image as ImageIcon } from 'lucide-react';
+import { Lock, LogIn, User, LayoutDashboard, LogOut, Ticket, Users, BarChart, Settings, Home, TicketPercent, Menu, LoaderCircle, Image as ImageIcon, Bell } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { collection, query, where, getDocs, addDoc, getCountFromServer } from "firebase/firestore";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { collection, query, where, getDocs, addDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 
@@ -91,7 +91,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/admin/banners', label: 'Banners', icon: ImageIcon },
     { href: '/admin/vouchers', label: 'Vouchers', icon: Ticket },
-    { href: '/admin/subscribers', label: 'Subscribers', icon: Users },
+    { href: '/admin/members', label: 'Members', icon: Users },
+    { href: '/admin/subscribers', label: 'Subscribers', icon: Bell },
     { href: '/admin/analytics', label: 'Analytics', icon: BarChart },
     { href: '/admin/settings', label: 'Settings', icon: Settings },
   ];

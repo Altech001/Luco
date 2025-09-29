@@ -33,3 +33,14 @@ export type Subscriber = {
   phone: string;
   subscribedAt: Date;
 };
+
+export type Member = {
+  id: string;
+  username: string;
+  phone: string;
+  password?: string;
+  subscriptionAmount: number;
+  joinedAt: Date;
+};
+
+export type NewMember = Omit<Member, 'id' | 'joinedAt'>;

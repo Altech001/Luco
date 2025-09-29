@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -11,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { addMember, getMemberByPhone } from '@/lib/members';
 
 type AuthStep = 'initial' | 'login' | 'register' | 'credentials';
 
@@ -49,20 +51,53 @@ export default function MembershipAuth({ onComplete }: { onComplete: () => void 
 
   const handleLogin = async (values: z.infer<typeof loginSchema>) => {
     setIsLoading(true);
-    await new Promise(res => setTimeout(res, 1000)); // Simulate API call
-    // In a real app, you'd fetch this from your backend
-    const fetchedCredentials = { username: 'member123', password: 'password123' };
-    setCredentials(fetchedCredentials);
-    setStep('credentials');
-    setIsLoading(false);
+    try {
+      const member = await getMemberByPhone(values.phone);
+      if (member) {
+        setCredentials({ username: member.username, password: member.password });
+        setStep('credentials');
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Not Found',
+          description: "We couldn't find a member with that phone number.",
+        });
+      }
+    } catch (error) {
+      console.error("Error logging in member:", error);
+      toast({
+        variant: 'destructive',
+        title: 'Login Failed',
+        description: 'An error occurred while trying to log you in.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleRegister = async (values: z.infer<typeof registerSchema>) => {
     setIsLoading(true);
-    await new Promise(res => setTimeout(res, 1000)); // Simulate API call
-    setCredentials({ username: values.username, password: values.password });
-    setStep('credentials');
-    setIsLoading(false);
+    try {
+      await addMember({
+        ...values,
+        subscriptionAmount: 5000, // Default subscription amount
+      });
+      setCredentials({ username: values.username, password: values.password });
+      setStep('credentials');
+       toast({
+        title: "Welcome to the Club!",
+        description: "Your membership has been created successfully.",
+      });
+    } catch(error: any) {
+       toast({
+        variant: 'destructive',
+        title: 'Registration Failed',
+        description: error.message || 'An unexpected error occurred.',
+      });
+    }
+    finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSendSms = () => {
