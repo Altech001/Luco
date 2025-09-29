@@ -73,7 +73,11 @@ export default function PromotionalBanners() {
                     data-ai-hint={banner.imageHint}
                     priority={index === 0}
                   />
-                  <div className="absolute inset-0 bg-black/30" />
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center p-4">
+                    <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white text-center shadow-lg">
+                        {banner.description}
+                    </h2>
+                  </div>
                 </CardContent>
               </Card>
             </CarouselItem>
