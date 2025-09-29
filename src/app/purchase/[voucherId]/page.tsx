@@ -38,7 +38,7 @@ export default function PurchasePage() {
              <div className="flex items-center gap-2 sm:gap-3">
                 <Ticket className="h-7 w-7 text-[hsl(var(--highlight))]" />
                 <h1 className="font-headline text-xl sm:text-2xl font-bold tracking-tight">
-                    Luco Coupons
+                    Luco
                 </h1>
             </div>
           </div>
