@@ -31,7 +31,7 @@ export default function PromotionalBanners() {
           {banners.map(banner => (
             <CarouselItem key={banner.id}>
               <Card className="overflow-hidden">
-                <CardContent className="relative aspect-[3/1] p-0">
+                <CardContent className="relative aspect-[2/1] sm:aspect-[3/1] p-0">
                   <Image
                     src={banner.imageUrl}
                     alt={banner.description}
@@ -46,8 +46,8 @@ export default function PromotionalBanners() {
             </CarouselItem>
           ))}
         </CarouselContent>
-        <CarouselPrevious className="absolute left-4 top-1/2 -translate-y-1/2" />
-        <CarouselNext className="absolute right-4 top-1/2 -translate-y-1/2" />
+        <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 sm:left-4" />
+        <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 sm:right-4" />
       </Carousel>
     </div>
   );

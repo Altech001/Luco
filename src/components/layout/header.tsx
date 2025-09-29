@@ -36,18 +36,18 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 max-w-7xl items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="container flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-2 sm:gap-3">
           <Ticket className="h-7 w-7 text-[hsl(var(--highlight))]" />
-          <h1 className="font-headline text-2xl font-bold tracking-tight">
+          <h1 className="font-headline text-xl sm:text-2xl font-bold tracking-tight">
             Luco Coupons
           </h1>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button variant="outline" size="sm">
-              <Bell className="mr-2 h-4 w-4" />
-              Get Notifications
+              <Bell className="mr-0 h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Get Notifications</span>
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
