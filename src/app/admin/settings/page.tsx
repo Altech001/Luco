@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -69,7 +69,11 @@ export default function SettingsPage() {
     defaultValues: {
       theme: (theme as "light" | "dark" | "system") || "system",
     },
-  })
+  });
+
+  useEffect(() => {
+    appearanceForm.setValue('theme', (theme as "light" | "dark" | "system") || "system");
+  }, [theme, appearanceForm]);
 
   const promotionsForm = useForm<PromotionsFormValues>({
     resolver: zodResolver(promotionsSchema),
@@ -103,6 +107,12 @@ export default function SettingsPage() {
         setIsSubmittingSms(false);
     }, 1500)
   }
+
+  const handleThemeChange = (isDarkMode: boolean) => {
+    const newTheme = isDarkMode ? 'dark' : 'light';
+    setTheme(newTheme);
+    appearanceForm.setValue('theme', newTheme);
+  };
 
   return (
     <>
@@ -174,46 +184,31 @@ export default function SettingsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Form {...appearanceForm}>
-              <FormField
-                control={appearanceForm.control}
-                name="theme"
-                render={({ field }) => (
-                  <FormItem className="space-y-3">
-                    <FormLabel>Theme</FormLabel>
-                    <FormControl>
-                      <RadioGroup
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                          setTheme(value);
-                        }}
-                        defaultValue={field.value}
-                        className="flex flex-col space-y-1"
-                      >
-                        <FormItem className="flex items-center space-x-3 space-y-0">
-                          <FormControl>
-                            <RadioGroupItem value="light" />
-                          </FormControl>
-                          <FormLabel className="font-normal">Light</FormLabel>
-                        </FormItem>
-                        <FormItem className="flex items-center space-x-3 space-y-0">
-                          <FormControl>
-                            <RadioGroupItem value="dark" />
-                          </FormControl>
-                          <FormLabel className="font-normal">Dark</FormLabel>
-                        </FormItem>
-                        <FormItem className="flex items-center space-x-3 space-y-0">
-                          <FormControl>
-                            <RadioGroupItem value="system" />
-                          </FormControl>
-                          <FormLabel className="font-normal">System</FormLabel>
-                        </FormItem>
-                      </RadioGroup>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+             <Form {...appearanceForm}>
+                <form>
+                    <FormField
+                        control={appearanceForm.control}
+                        name="theme"
+                        render={() => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                <div className="space-y-0.5">
+                                    <FormLabel className="text-base">
+                                        Dark Mode
+                                    </FormLabel>
+                                    <FormDescription>
+                                        Enable to switch to a dark theme.
+                                    </FormDescription>
+                                </div>
+                                <FormControl>
+                                    <Switch
+                                        checked={theme === 'dark'}
+                                        onCheckedChange={handleThemeChange}
+                                    />
+                                </FormControl>
+                            </FormItem>
+                        )}
+                    />
+                </form>
             </Form>
           </CardContent>
         </Card>
