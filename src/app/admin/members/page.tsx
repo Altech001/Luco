@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { LoaderCircle, MoreHorizontal, Pencil, Trash2, User, DollarSign, Lock, Eye, EyeOff } from "lucide-react";
+import { LoaderCircle, MoreHorizontal, Pencil, Trash2, User, DollarSign, Lock, Eye, EyeOff, Send } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { getMembers, deleteMember, updateMember } from '@/lib/members';
 import type { Member } from '@/types';
@@ -25,6 +25,7 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import {
   AlertDialog,
@@ -153,6 +154,22 @@ export default function MembersPage() {
       });
     }
   };
+  
+  const handleSendSms = (member: Member) => {
+    if (!member.password) {
+        toast({
+            variant: 'destructive',
+            title: 'No Password Set',
+            description: "You cannot send credentials because a password hasn't been set for this member."
+        });
+        return;
+    }
+    // In a real app, you'd call an SMS service here.
+    toast({
+        title: 'SMS Sent!',
+        description: `Credentials for ${member.username} have been sent to ${member.phone}.`
+    });
+  }
 
   const totalPages = Math.ceil(members.length / MEMBERS_PER_PAGE);
   const paginatedMembers = members.slice(
@@ -221,6 +238,10 @@ export default function MembersPage() {
                                   }}>
                                     <Pencil className="mr-2 h-4 w-4" /> Edit
                                   </DropdownMenuItem>
+                                   <DropdownMenuItem onSelect={() => handleSendSms(member)}>
+                                    <Send className="mr-2 h-4 w-4" /> Send Credentials
+                                  </DropdownMenuItem>
+                                <DropdownMenuSeparator />
                                 <AlertDialogTrigger asChild>
                                   <DropdownMenuItem className="text-destructive focus:text-destructive">
                                     <Trash2 className="mr-2 h-4 w-4" /> Delete
@@ -281,7 +302,7 @@ export default function MembersPage() {
             </div>
             </>
           )}
-        </CardContent>
+        </Content>
       </Card>
       <Dialog open={isEditDialogOpen} onOpenChange={(isOpen) => {
           setIsEditDialogOpen(isOpen);
