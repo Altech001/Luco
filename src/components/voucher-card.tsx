@@ -42,6 +42,9 @@ export default function VoucherCard({ voucher, isHighlighted = false }: VoucherC
         <div className="w-2/3 p-3 sm:p-4">
           <CardContent className="flex h-full flex-col justify-between p-0">
             <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Badge variant="secondary">{voucher.category}</Badge>
+              </div>
               <h3 className="font-headline text-base sm:text-lg font-semibold leading-tight">{voucher.title}</h3>
               <p className="mt-1 text-[10px] sm:text-xs text-muted-foreground">{voucher.description}</p>
             </div>
