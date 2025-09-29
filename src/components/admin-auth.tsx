@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { TicketPercent, User, Lock, LoaderCircle } from 'lucide-react';
+import { TicketPercent, User, Lock, LoaderCircle, Eye, EyeOff } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
 
 const loginSchema = z.object({
@@ -26,6 +26,7 @@ type AdminAuthProps = {
 
 export default function AdminAuth({ onLoginSuccess }: AdminAuthProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
 
   const form = useForm<LoginFormValues>({
@@ -63,7 +64,7 @@ export default function AdminAuth({ onLoginSuccess }: AdminAuthProps) {
        <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>
-      <Card className="w-full max-w-sm">
+      <Card className="w-full max-w-sm rounded-none">
         <CardHeader className="text-center">
             <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2">
                 <TicketPercent className="h-8 w-8 text-[hsl(var(--highlight))]" />
@@ -101,7 +102,19 @@ export default function AdminAuth({ onLoginSuccess }: AdminAuthProps) {
                     <FormControl>
                         <div className="relative">
                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                           <Input type="password" placeholder="••••••••" {...field} className="pl-10" />
+                           <Input 
+                             type={showPassword ? 'text' : 'password'}
+                             placeholder="••••••••" 
+                             {...field} 
+                             className="pl-10 pr-10"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground"
+                            >
+                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
                         </div>
                     </FormControl>
                     <FormMessage />
