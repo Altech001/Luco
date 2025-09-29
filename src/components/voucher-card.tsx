@@ -46,10 +46,10 @@ export default function VoucherCard({ voucher, isHighlighted = false }: VoucherC
                 <Badge variant="secondary">{voucher.category}</Badge>
               </div>
               <h3 className="font-headline text-base sm:text-lg font-semibold leading-tight">{voucher.title}</h3>
-              <p className="mt-1 text-[10px] sm:text-xs text-muted-foreground">{voucher.description}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{voucher.description}</p>
             </div>
-            <div className="mt-2 sm:mt-4 flex items-center gap-2 text-[10px] sm:text-xs text-muted-foreground">
-              <CalendarClock className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+            <div className="mt-2 sm:mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+              <CalendarClock className="h-3.5 w-3.5" />
               <span>Expires: {voucher.expiryDate}</span>
             </div>
           </CardContent>
@@ -60,9 +60,9 @@ export default function VoucherCard({ voucher, isHighlighted = false }: VoucherC
             <p className="text-xl sm:text-2xl font-bold text-[hsl(var(--highlight))]">{voucher.discount}</p>
             <p className="text-[10px] sm:text-xs font-semibold uppercase text-accent-foreground">Discount</p>
             <div className="mt-1 sm:mt-2 space-y-1">
-              <p className="text-[10px] sm:text-xs font-semibold tracking-wider text-primary">{voucher.code}</p>
-               <Button variant="ghost" size="sm" className="h-5 w-5 sm:h-6 sm:w-6 p-0" onClick={handleCopyCode}>
-                <Copy className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              <p className="text-xs font-semibold tracking-wider text-primary">{voucher.code}</p>
+               <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleCopyCode}>
+                <Copy className="h-3.5 w-3.5" />
                 <span className="sr-only">Copy code</span>
               </Button>
             </div>
