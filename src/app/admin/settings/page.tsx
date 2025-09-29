@@ -10,9 +10,10 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { LoaderCircle, Wallet, Sun, Moon, Laptop } from 'lucide-react';
+import { LoaderCircle, Wallet, Sun, Moon, Laptop, Mail, Bell } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
+import { Switch } from '@/components/ui/switch';
 
 
 const paymentSchema = z.object({
@@ -106,6 +107,36 @@ export default function SettingsPage() {
                      <Button variant={theme === 'system' ? 'default' : 'outline'} onClick={() => setTheme('system')}>
                         <Laptop className="mr-2 h-4 w-4" /> System
                     </Button>
+                </div>
+            </CardContent>
+        </Card>
+      </div>
+      <div className="mt-8">
+        <Card>
+            <CardHeader>
+                <CardTitle>Notification Settings</CardTitle>
+                <CardDescription>
+                    Configure how you receive alerts from the system.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <div className="flex items-start justify-between rounded-lg border p-4">
+                    <div className="space-y-1">
+                        <h3 className="font-medium">Email Notifications</h3>
+                        <p className="text-sm text-muted-foreground">Receive alerts about important events via email.</p>
+                    </div>
+                     <div className="flex items-center space-x-2">
+                        <Switch id="email-notifications" />
+                    </div>
+                </div>
+                 <div className="flex items-start justify-between rounded-lg border p-4">
+                    <div className="space-y-1">
+                        <h3 className="font-medium">SMS Notifications</h3>
+                        <p className="text-sm text-muted-foreground">Receive alerts about critical events via SMS.</p>
+                    </div>
+                     <div className="flex items-center space-x-2">
+                        <Switch id="sms-notifications" />
+                    </div>
                 </div>
             </CardContent>
         </Card>
