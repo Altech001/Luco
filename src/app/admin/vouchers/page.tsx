@@ -827,6 +827,7 @@ export default function VouchersPage() {
                     <TableHead>Category</TableHead>
                     <TableHead>Price</TableHead>
                     <TableHead>Code</TableHead>
+                    <TableHead>Purchased By</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -837,11 +838,12 @@ export default function VouchersPage() {
                         <TableCell>{voucher.category}</TableCell>
                         <TableCell>{formattedPrice(voucher.price)}</TableCell>
                         <TableCell><Badge variant="outline">{voucher.code}</Badge></TableCell>
+                        <TableCell>{voucher.purchasedBy || 'N/A'}</TableCell>
                       </TableRow>
                     ))
                   ) : (
                      <TableRow>
-                      <TableCell colSpan={4} className="h-24 text-center">
+                      <TableCell colSpan={5} className="h-24 text-center">
                         No vouchers have been purchased yet.
                       </TableCell>
                     </TableRow>
@@ -892,5 +894,3 @@ export default function VouchersPage() {
     </>
   );
 }
-
-    

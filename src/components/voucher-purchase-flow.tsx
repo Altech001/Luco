@@ -111,7 +111,7 @@ export default function VoucherPurchaseFlow({ voucher, onComplete }: VoucherPurc
     try {
       await new Promise(res => setTimeout(res, 1000)); // Simulate verification
       if (values.code === '123456') { // Mock OTP
-        await updateVoucher(voucher.id, { status: 'purchased' });
+        await updateVoucher(voucher.id, { status: 'purchased', purchasedBy: phoneNumber });
         setStep('receipt');
         toast({
           title: 'Purchase Successful!',

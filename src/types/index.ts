@@ -16,6 +16,7 @@ export type Voucher = {
   price: number;
   isNew?: boolean;
   status: VoucherStatus;
+  purchasedBy?: string;
 };
 
 export type VoucherProfile = {

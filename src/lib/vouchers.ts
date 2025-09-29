@@ -3,7 +3,7 @@ import { collection, getDocs, getDoc, query, orderBy, addDoc, doc, deleteDoc, up
 import { db } from './firebase';
 import type { Voucher, VoucherCategoryName, VoucherProfile, NewVoucherProfileData } from '@/types';
 
-type NewVoucherData = Omit<Voucher, 'id' | 'status'>;
+type NewVoucherData = Omit<Voucher, 'id' | 'status' | 'purchasedBy'>;
 
 export async function addVoucher(voucherData: NewVoucherData): Promise<void> {
   await addDoc(collection(db, 'vouchers'), {
@@ -32,6 +32,9 @@ export async function batchAddVouchers(vouchersData: NewVoucherData[]): Promise<
 
 export async function getVouchers(includeInactive = false): Promise<Voucher[]> {
   const vouchersRef = collection(db, 'vouchers');
+  // Firestore composite queries require an index. To avoid this, we'll query and then filter in code.
+  // The query was: query(vouchersRef, where('status', '==', 'active'), orderBy('createdAt', 'desc'))
+  // It required a composite index on 'status' and 'createdAt'.
   const q = query(vouchersRef, orderBy('createdAt', 'desc'));
   
   const querySnapshot = await getDocs(q);
@@ -68,6 +71,7 @@ export async function getVouchers(includeInactive = false): Promise<Voucher[]> {
       code: data.code,
       isNew: data.isNew || false,
       status: status,
+      purchasedBy: data.purchasedBy,
     });
   });
 
@@ -101,13 +105,14 @@ export async function getVoucherById(id: string): Promise<Voucher | undefined> {
       code: data.code,
       isNew: data.isNew || false,
       status: status,
+      purchasedBy: data.purchasedBy,
     }
   } else {
     return undefined;
   }
 }
 
-export async function updateVoucher(id: string, data: Partial<NewVoucherData & { status?: string }>): Promise<void> {
+export async function updateVoucher(id: string, data: Partial<NewVoucherData & { status?: string, purchasedBy?: string }>): Promise<void> {
   const voucherRef = doc(db, 'vouchers', id);
   await updateDoc(voucherRef, data);
 }
