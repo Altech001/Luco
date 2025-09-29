@@ -9,7 +9,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
@@ -31,7 +30,7 @@ const smsSchema = z.object({
 type SmsFormValues = z.infer<typeof smsSchema>;
 
 const appearanceSchema = z.object({
-  theme: z.enum(["light", "dark", "system"]),
+  theme: z.enum(["light", "dark"]),
 })
 type AppearanceFormValues = z.infer<typeof appearanceSchema>
 
@@ -67,12 +66,12 @@ export default function SettingsPage() {
    const appearanceForm = useForm<AppearanceFormValues>({
     resolver: zodResolver(appearanceSchema),
     defaultValues: {
-      theme: (theme as "light" | "dark" | "system") || "system",
+      theme: (theme as "light" | "dark") || "light",
     },
   });
 
   useEffect(() => {
-    appearanceForm.setValue('theme', (theme as "light" | "dark" | "system") || "system");
+    appearanceForm.setValue('theme', (theme as "light" | "dark") || "light");
   }, [theme, appearanceForm]);
 
   const promotionsForm = useForm<PromotionsFormValues>({
