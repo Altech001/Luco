@@ -84,6 +84,15 @@ export async function deleteVoucher(id: string): Promise<void> {
   await deleteDoc(voucherRef);
 }
 
+export async function batchDeleteVouchers(voucherIds: string[]): Promise<void> {
+  const batch = writeBatch(db);
+  voucherIds.forEach(id => {
+    const voucherRef = doc(db, 'vouchers', id);
+    batch.delete(voucherRef);
+  });
+  await batch.commit();
+}
+
 
 // Voucher Profiles
 export async function addVoucherProfile(profileData: NewVoucherProfileData): Promise<void> {

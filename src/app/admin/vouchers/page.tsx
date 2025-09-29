@@ -22,7 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, LoaderCircle, MoreHorizontal, Pencil, Trash2, Ticket, Tag, Calendar, DollarSign, Percent, FileText, Upload, ArrowLeft } from 'lucide-react';
 import { Switch } from "@/components/ui/switch"
 import type { Voucher, VoucherProfile } from '@/types';
-import { getVouchers, addVoucher, updateVoucher, deleteVoucher, batchAddVouchers, getVoucherProfiles } from '@/lib/vouchers';
+import { getVouchers, addVoucher, updateVoucher, deleteVoucher, batchAddVouchers, getVoucherProfiles, batchDeleteVouchers } from '@/lib/vouchers';
 import { voucherCategoriesData } from '@/lib/data';
 import {
   Dialog,
@@ -63,6 +63,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, addDays } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const voucherSchema = z.object({
   title: z.string().min(1, 'Title is required.'),
@@ -211,7 +212,7 @@ function VoucherForm({
                 <FormLabel>Expiry Date</FormLabel>
                  <FormControl>
                     <div className="relative">
-                        <Calendar className="absolute left-3 top-1/_2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input placeholder="e.g., 24 Dec 2024" {...field} className="pl-10" />
                     </div>
                 </FormControl>
@@ -356,6 +357,7 @@ export default function VouchersPage() {
   const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(null);
   const [view, setView] = useState<'grid' | 'table'>('grid');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedVouchers, setSelectedVouchers] = useState<string[]>([]);
   const { toast } = useToast();
 
   const fetchData = async () => {
@@ -439,6 +441,28 @@ export default function VouchersPage() {
     }
   };
 
+  const handleBatchDelete = async () => {
+    setIsSubmitting(true);
+    try {
+      await batchDeleteVouchers(selectedVouchers);
+      toast({
+        title: 'Vouchers Deleted',
+        description: `${selectedVouchers.length} vouchers have been removed.`,
+      });
+      setSelectedVouchers([]);
+      fetchData();
+    } catch (error) {
+      console.error('Error deleting vouchers:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Delete Failed',
+        description: 'Could not delete the selected vouchers.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleImport = async (data: ImportFormValues) => {
     setIsSubmitting(true);
     const file = data.csvFile[0];
@@ -515,10 +539,31 @@ export default function VouchersPage() {
 
   const handleCategoryClick = (categoryName: string) => {
     setSelectedCategory(categoryName);
+    setSelectedVouchers([]);
     setView('table');
   };
+  
+  useEffect(() => {
+    setSelectedVouchers([]);
+  }, [selectedCategory]);
 
   const currentVouchers = selectedCategory ? vouchersByCategory[selectedCategory] || [] : [];
+  
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedVouchers(currentVouchers.map(v => v.id));
+    } else {
+      setSelectedVouchers([]);
+    }
+  };
+
+  const handleRowSelect = (voucherId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedVouchers(prev => [...prev, voucherId]);
+    } else {
+      setSelectedVouchers(prev => prev.filter(id => id !== voucherId));
+    }
+  };
 
   const renderGridView = () => (
     <>
@@ -573,8 +618,8 @@ export default function VouchersPage() {
   );
 
   const renderTableView = () => (
-    <>
-       <div className="flex items-center justify-between gap-2">
+    <AlertDialog>
+      <div className="flex items-center justify-between gap-2">
         <div className='flex items-center gap-4'>
            <Button variant="outline" size="icon" onClick={() => setView('grid')}>
             <ArrowLeft className="h-4 w-4" />
@@ -592,8 +637,20 @@ export default function VouchersPage() {
       </div>
        <Card className="mt-8">
         <CardHeader>
-          <CardTitle>Voucher List</CardTitle>
-          <CardDescription>Here are all the vouchers for the {selectedCategory} category.</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Voucher List</CardTitle>
+              <CardDescription>Here are all the vouchers for the {selectedCategory} category.</CardDescription>
+            </div>
+             {selectedVouchers.length > 0 && (
+                <AlertDialogTrigger asChild>
+                    <Button variant="destructive" disabled={isSubmitting}>
+                        {isSubmitting ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                        Delete ({selectedVouchers.length})
+                    </Button>
+                </AlertDialogTrigger>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -605,6 +662,13 @@ export default function VouchersPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead padding="checkbox" className="w-12">
+                      <Checkbox
+                        checked={selectedVouchers.length > 0 && selectedVouchers.length === currentVouchers.length}
+                        onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                        aria-label="Select all"
+                      />
+                    </TableHead>
                     <TableHead>Title</TableHead>
                     <TableHead>Price</TableHead>
                     <TableHead>Expires</TableHead>
@@ -617,7 +681,14 @@ export default function VouchersPage() {
                 <TableBody>
                   {currentVouchers.length > 0 ? (
                     currentVouchers.map((voucher) => (
-                      <TableRow key={voucher.id}>
+                      <TableRow key={voucher.id} data-state={selectedVouchers.includes(voucher.id) && "selected"}>
+                        <TableCell padding="checkbox">
+                          <Checkbox
+                             checked={selectedVouchers.includes(voucher.id)}
+                             onCheckedChange={(checked) => handleRowSelect(voucher.id, checked as boolean)}
+                             aria-label="Select row"
+                          />
+                        </TableCell>
                         <TableCell className="font-medium">{voucher.title}</TableCell>
                         <TableCell>{formattedPrice(voucher.price)}</TableCell>
                         <TableCell>{voucher.expiryDate}</TableCell>
@@ -666,7 +737,7 @@ export default function VouchersPage() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={5} className="h-24 text-center">
+                      <TableCell colSpan={6} className="h-24 text-center">
                         No vouchers found for this category.
                       </TableCell>
                     </TableRow>
@@ -677,7 +748,21 @@ export default function VouchersPage() {
           )}
         </CardContent>
       </Card>
-    </>
+      <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete {selectedVouchers.length} selected vouchers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBatchDelete}>
+              Yes, delete vouchers
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
   );
 
 
@@ -716,5 +801,3 @@ export default function VouchersPage() {
     </>
   );
 }
-
-    
