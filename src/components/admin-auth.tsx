@@ -1,0 +1,148 @@
+
+'use client';
+
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
+import { TicketPercent, User, Lock, LoaderCircle } from 'lucide-react';
+import { ThemeToggle } from './theme-toggle';
+
+const loginSchema = z.object({
+  username: z.string().min(1, 'Username is required.'),
+  password: z.string().min(1, 'Password is required.'),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
+
+type AdminAuthProps = {
+  onLoginSuccess: () => void;
+};
+
+export default function AdminAuth({ onLoginSuccess }: AdminAuthProps) {
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+
+  const form = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      username: '',
+      password: '',
+    },
+  });
+
+  const handleLogin = (values: LoginFormValues) => {
+    setIsLoading(true);
+    // Simulate API call
+    setTimeout(() => {
+      if (values.username === 'admin' && values.password === 'password') {
+        toast({
+          title: 'Login Successful',
+          description: 'Welcome back, Albertine!',
+        });
+        onLoginSuccess();
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Login Failed',
+          description: 'Invalid username or password.',
+        });
+        form.reset();
+      }
+      setIsLoading(false);
+    }, 1000);
+  };
+
+   const handleCreateDefaultAdmin = () => {
+    setIsLoading(true);
+    setTimeout(() => {
+        toast({
+          title: 'Default Admin Created',
+          description: 'You can now log in with username "admin" and password "password".',
+        });
+        setIsLoading(false);
+    }, 1000)
+  };
+
+
+  return (
+    <div className="flex min-h-screen w-full items-center justify-center bg-background p-4">
+       <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+      <Card className="w-full max-w-sm">
+        <CardHeader className="text-center">
+            <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2">
+                <TicketPercent className="h-8 w-8 text-[hsl(var(--highlight))]" />
+                <h1 className="font-headline text-2xl sm:text-3xl font-bold tracking-tight">
+                    Luco
+                </h1>
+            </div>
+          <CardTitle className="text-2xl">Admin Login</CardTitle>
+          <CardDescription>Enter your credentials to access the dashboard.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleLogin)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Username</FormLabel>
+                    <FormControl>
+                       <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input placeholder="admin" {...field} className="pl-10" />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                        <div className="relative">
+                           <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                           <Input type="password" placeholder="••••••••" {...field} className="pl-10" />
+                        </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? <LoaderCircle className="animate-spin" /> : 'Login'}
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+        <CardFooter className="flex flex-col gap-4">
+            <div className="relative w-full">
+                <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                    First time setup
+                    </span>
+                </div>
+            </div>
+            <Button variant="outline" className="w-full" onClick={handleCreateDefaultAdmin} disabled={isLoading}>
+                 {isLoading ? <LoaderCircle className="animate-spin" /> : 'Create Default Admin'}
+            </Button>
+        </CardFooter>
+      </Card>
+    </div>
+  );
+}
