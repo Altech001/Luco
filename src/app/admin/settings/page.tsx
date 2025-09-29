@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -10,22 +10,43 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { LoaderCircle, Wallet, Sun, Moon, Laptop, Mail, Bell } from 'lucide-react';
+import { LoaderCircle, Wallet, Sun, Moon, Laptop, Mail, Bell, Send, Users } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
-
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { getSubscribers, sendSms } from '@/lib/subscribers';
+import type { Subscriber } from '@/types';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const paymentSchema = z.object({
   amount: z.coerce.number().min(1, 'Please enter an amount.'),
 });
 type PaymentFormValues = z.infer<typeof paymentSchema>;
 
+const bulkSmsSchema = z.object({
+  message: z.string().min(1, 'Message cannot be empty.'),
+});
+type BulkSmsFormValues = z.infer<typeof bulkSmsSchema>;
+
 
 export default function SettingsPage() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { theme, setTheme } = useTheme();
+  const [isSmsDialogOpen, setIsSmsDialogOpen] = useState(false);
+  const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
+  const [isSmsEnabled, setIsSmsEnabled] = useState(false);
 
   const paymentForm = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentSchema),
@@ -33,6 +54,32 @@ export default function SettingsPage() {
       amount: 0,
     },
   });
+
+  const smsForm = useForm<BulkSmsFormValues>({
+    resolver: zodResolver(bulkSmsSchema),
+    defaultValues: {
+      message: '',
+    },
+  });
+
+  useEffect(() => {
+    if (isSmsDialogOpen) {
+      const fetchSubscribers = async () => {
+        try {
+          const subs = await getSubscribers();
+          setSubscribers(subs);
+        } catch (error) {
+          console.error("Failed to fetch subscribers:", error);
+          toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Could not fetch subscriber list.',
+          });
+        }
+      };
+      fetchSubscribers();
+    }
+  }, [isSmsDialogOpen, toast]);
 
   const handlePaymentSubmit = (values: PaymentFormValues) => {
     setIsSubmitting(true);
@@ -45,6 +92,36 @@ export default function SettingsPage() {
       paymentForm.reset();
       setIsSubmitting(false);
     }, 1000);
+  };
+  
+  const handleSmsToggle = (checked: boolean) => {
+    setIsSmsEnabled(checked);
+    if (checked) {
+      setIsSmsDialogOpen(true);
+    }
+  }
+
+  const handleSendSms = async (values: BulkSmsFormValues) => {
+    setIsSubmitting(true);
+    try {
+      await sendSms(subscribers.map(s => s.phone), values.message);
+      toast({
+        title: 'Bulk SMS Sent!',
+        description: `Your message has been sent to ${subscribers.length} subscribers.`,
+      });
+      smsForm.reset();
+      setIsSmsDialogOpen(false);
+      setIsSmsEnabled(false);
+    } catch (error) {
+      console.error("Failed to send bulk SMS:", error);
+      toast({
+        variant: 'destructive',
+        title: 'Send Failed',
+        description: 'There was an error sending the bulk SMS.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
 
@@ -132,15 +209,89 @@ export default function SettingsPage() {
                  <div className="flex items-start justify-between rounded-lg border p-4">
                     <div className="space-y-1">
                         <h3 className="font-medium">SMS Notifications</h3>
-                        <p className="text-sm text-muted-foreground">Receive alerts about critical events via SMS.</p>
+                        <p className="text-sm text-muted-foreground">Send bulk SMS messages to all subscribers.</p>
                     </div>
                      <div className="flex items-center space-x-2">
-                        <Switch id="sms-notifications" />
+                        <Switch 
+                          id="sms-notifications"
+                          checked={isSmsEnabled}
+                          onCheckedChange={handleSmsToggle}
+                        />
                     </div>
                 </div>
             </CardContent>
         </Card>
       </div>
+
+       <Dialog open={isSmsDialogOpen} onOpenChange={(open) => {
+         setIsSmsDialogOpen(open);
+         if (!open) {
+           setIsSmsEnabled(false);
+           smsForm.reset();
+         }
+       }}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Send Bulk SMS</DialogTitle>
+            <DialogDescription>
+              Compose a message to send to all your subscribers.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+              <Form {...smsForm}>
+                <form id="sms-form" onSubmit={smsForm.handleSubmit(handleSendSms)} className="space-y-4">
+                    <FormField
+                    control={smsForm.control}
+                    name="message"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Message</FormLabel>
+                        <FormControl>
+                            <Textarea
+                                placeholder="Type your promotional message here..."
+                                className="resize-none"
+                                rows={8}
+                                {...field}
+                            />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                </form>
+              </Form>
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium flex items-center gap-2">
+                  <Users className="h-4 w-4"/> Recipients ({subscribers.length})
+                </h3>
+                <ScrollArea className="h-48 w-full rounded-md border">
+                    <div className="p-4 text-sm">
+                        {subscribers.length > 0 ? (
+                          <ul className="space-y-2">
+                              {subscribers.map(sub => (
+                                <li key={sub.id} className="text-muted-foreground">{sub.phone}</li>
+                              ))}
+                          </ul>
+                        ) : (
+                          <p className="text-muted-foreground text-center">No subscribers found.</p>
+                        )}
+                    </div>
+                </ScrollArea>
+              </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline">
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button type="submit" form="sms-form" disabled={isSubmitting}>
+              {isSubmitting ? <LoaderCircle className="animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+              Send to {subscribers.length} Subscribers
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

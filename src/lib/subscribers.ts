@@ -1,4 +1,5 @@
 
+
 import { collection, getDocs, query, orderBy, addDoc, where, Timestamp, limit, doc, deleteDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Subscriber } from '@/types';
@@ -58,4 +59,15 @@ export async function batchDeleteSubscribers(subscriberIds: string[]): Promise<v
   await batch.commit();
 }
 
+/**
+ * Placeholder function to simulate sending a bulk SMS.
+ * In a real application, this would integrate with an SMS gateway API.
+ */
+export async function sendSms(phoneNumbers: string[], message: string): Promise<void> {
+  console.log(`Simulating sending SMS to ${phoneNumbers.length} numbers.`);
+  console.log(`Message: "${message}"`);
+  // Simulate network delay
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  console.log('SMS sent successfully (simulation).');
+}
     
