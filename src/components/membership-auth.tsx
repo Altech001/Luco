@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { AnimatePresence, motion } from 'framer-motion';
-import { UserPlus, LogIn, KeyRound, Smartphone, User, Lock, Send, LoaderCircle } from 'lucide-react';
+import { UserPlus, LogIn, KeyRound, Smartphone, User, Lock, Send, LoaderCircle, TicketIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -196,21 +196,34 @@ export default function MembershipAuth({ onComplete }: { onComplete: () => void 
             return (
               <MotionDiv initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <DialogHeader>
-                  <DialogTitle>Your Credentials</DialogTitle>
-                  <DialogDescription>Here is your login information. You can send it to your phone via SMS.</DialogDescription>
+                  <DialogTitle>Your Membership Ticket</DialogTitle>
+                  <DialogDescription>Your credentials are listed below. Keep them safe!</DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4 py-6">
-                    <div className="rounded-md border bg-muted p-4">
-                        <p className="text-sm font-medium text-muted-foreground">Username</p>
-                        <p className="text-lg font-semibold">{credentials?.username}</p>
+                <div className="py-6">
+                  <div className="relative flex min-h-[160px] w-full rounded-lg border bg-card text-card-foreground shadow-md">
+                    <div className="relative w-2/3 p-4">
+                        <div className="absolute top-1/2 -right-[13px] z-10 -translate-y-1/2 h-6 w-6 rounded-full bg-background dark:bg-card"></div>
+                        <div className="flex h-full flex-col justify-center space-y-4">
+                            <div>
+                                <p className="text-xs font-medium uppercase text-muted-foreground">Username</p>
+                                <p className="text-lg font-semibold tracking-wide">{credentials?.username}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs font-medium uppercase text-muted-foreground">Password</p>
+                                <p className="font-mono text-lg font-semibold tracking-wider">{credentials?.password}</p>
+                            </div>
+                        </div>
                     </div>
-                    <div className="rounded-md border bg-muted p-4">
-                        <p className="text-sm font-medium text-muted-foreground">Password</p>
-                        <p className="font-mono text-lg font-semibold tracking-wider">{credentials?.password}</p>
+                    <div className="relative w-1/3 rounded-r-lg border-l-2 border-dashed bg-accent/30 p-2 dark:bg-accent/10">
+                      <div className="flex h-full flex-col items-center justify-center text-center">
+                        <TicketIcon className="h-10 w-10 text-highlight" />
+                        <p className="mt-2 text-xs font-semibold uppercase text-accent-foreground/80">Member</p>
+                      </div>
                     </div>
+                  </div>
                 </div>
                 <Button className="w-full" onClick={handleSendSms}>
-                    <Send className="mr-2"/> Send via SMS
+                    <Send className="mr-2"/> Send to my Phone
                 </Button>
               </MotionDiv>
             );
