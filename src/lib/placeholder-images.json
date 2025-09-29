@@ -1,3 +1,22 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "banner-1",
+      "description": "A vibrant banner for a new coffee promotion",
+      "imageUrl": "https://images.unsplash.com/photo-1690983321102-b46d00ca7498?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxjb2ZmZWUlMjBwcm9tb3Rpb258ZW58MHx8fHwxNzU5MDY2OTIxfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "coffee promotion"
+    },
+    {
+      "id": "banner-2",
+      "description": "A banner showing a weekly special on pastries",
+      "imageUrl": "https://images.unsplash.com/photo-1755200385572-ffd714b1bacb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxkZWxpY2lvdXMlMjBwYXN0cmllc3xlbnwwfHx8fDE3NTkxMDg0NzF8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "delicious pastries"
+    },
+    {
+      "id": "banner-3",
+      "description": "A banner advertising a monthly subscription box",
+      "imageUrl": "https://images.unsplash.com/photo-1602177720195-bf5a61c6d699?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxzdWJzY3JpcHRpb24lMjBib3h8ZW58MHx8fHwxNzU5MDYxMjIwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "subscription box"
+    }
+  ]
 }
