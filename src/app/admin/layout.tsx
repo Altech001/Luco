@@ -74,7 +74,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           items: [
               { href: '#', label: 'GDPR Cookie', icon: Cookie },
               { href: '#', label: 'Server Info', icon: Server },
-              { href: '#', a: 'Clear Cache', icon: Broom },
+              { href: '#', label: 'Clear Cache', icon: Broom },
           ]
       }
   ]
