@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { LoaderCircle, MoreHorizontal, Pencil, Trash2, User, DollarSign } from "lucide-react";
+import { LoaderCircle, MoreHorizontal, Pencil, Trash2, User, DollarSign, Lock, Eye, EyeOff } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { getMembers, deleteMember, updateMember } from '@/lib/members';
 import type { Member } from '@/types';
@@ -53,6 +53,7 @@ import { format } from 'date-fns';
 const memberSchema = z.object({
   username: z.string().min(1, 'Username is required.'),
   subscriptionAmount: z.coerce.number().min(0, 'Subscription amount must be a positive number.'),
+  password: z.string().optional(),
 });
 
 type MemberFormValues = z.infer<typeof memberSchema>;
@@ -66,6 +67,7 @@ export default function MembersPage() {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const { toast } = useToast();
   const [currentPage, setCurrentPage] = useState(1);
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<MemberFormValues>({
     resolver: zodResolver(memberSchema),
@@ -96,6 +98,7 @@ export default function MembersPage() {
     if (selectedMember) {
       form.setValue('username', selectedMember.username);
       form.setValue('subscriptionAmount', selectedMember.subscriptionAmount);
+      form.setValue('password', selectedMember.password || '');
     }
   }, [selectedMember, form]);
 
@@ -103,13 +106,23 @@ export default function MembersPage() {
     if (!selectedMember) return;
     setIsSubmitting(true);
     try {
-      await updateMember(selectedMember.id, values);
+      const updateData: Partial<Member> = {
+        username: values.username,
+        subscriptionAmount: values.subscriptionAmount,
+      };
+
+      if (values.password) {
+        updateData.password = values.password;
+      }
+
+      await updateMember(selectedMember.id, updateData);
       toast({
         title: 'Member Updated',
         description: 'The member details have been successfully updated.',
       });
       setIsEditDialogOpen(false);
       setSelectedMember(null);
+      form.reset();
       fetchMembers();
     } catch (error) {
       console.error("Error updating member:", error);
@@ -270,7 +283,13 @@ export default function MembersPage() {
           )}
         </CardContent>
       </Card>
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+      <Dialog open={isEditDialogOpen} onOpenChange={(isOpen) => {
+          setIsEditDialogOpen(isOpen);
+          if (!isOpen) {
+            form.reset();
+            setShowPassword(false);
+          }
+        }}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Edit Member</DialogTitle>
@@ -304,6 +323,34 @@ export default function MembersPage() {
                       <div className="relative">
                         <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input type="number" placeholder="5000" {...field} className="pl-10" />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>New Password (optional)</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="Enter new password" 
+                          {...field} 
+                          className="pl-10 pr-10" 
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground"
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
                       </div>
                     </FormControl>
                     <FormMessage />

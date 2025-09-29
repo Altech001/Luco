@@ -69,9 +69,16 @@ export async function getMemberByPhone(phone: string): Promise<Member | null> {
 }
 
 
-export async function updateMember(id: string, data: { username: string; subscriptionAmount: number }): Promise<void> {
+export async function updateMember(id: string, data: Partial<Member>): Promise<void> {
   const memberRef = doc(db, 'members', id);
-  await updateDoc(memberRef, data);
+  const updateData = { ...data };
+
+  // If the password is an empty string, don't update it
+  if (updateData.password === '') {
+    delete updateData.password;
+  }
+  
+  await updateDoc(memberRef, updateData);
 }
 
 export async function deleteMember(id: string): Promise<void> {
