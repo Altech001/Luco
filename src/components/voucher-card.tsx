@@ -1,5 +1,5 @@
 'use client';
-import { Copy, CalendarClock } from 'lucide-react';
+import { ShoppingCart, CalendarClock } from 'lucide-react';
 import type { Voucher } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,11 +15,10 @@ type VoucherCardProps = {
 export default function VoucherCard({ voucher, isHighlighted = false }: VoucherCardProps) {
   const { toast } = useToast();
 
-  const handleCopyCode = () => {
-    navigator.clipboard.writeText(voucher.code);
+  const handleBuyNow = () => {
     toast({
-      title: 'Code Copied!',
-      description: `Voucher code is now in your clipboard.`,
+      title: 'Voucher Purchased!',
+      description: `You have successfully purchased the "${voucher.title}" voucher.`,
     });
   };
 
@@ -36,7 +35,7 @@ export default function VoucherCard({ voucher, isHighlighted = false }: VoucherC
         isHighlighted && 'shadow-lg ring-2 ring-offset-2 ring-[hsl(var(--highlight))]'
       )}
     >
-      <div className="relative flex min-h-[160px] text-card-foreground">
+      <div className="relative flex min-h-[180px] text-card-foreground">
         {voucher.isNew && (
           <Badge
             className="absolute -right-2 -top-2 z-10 animate-pulse bg-[hsl(var(--highlight))] text-[hsl(var(--highlight-foreground))] border-transparent"
@@ -66,9 +65,9 @@ export default function VoucherCard({ voucher, isHighlighted = false }: VoucherC
             <p className="text-xl sm:text-2xl font-bold text-[hsl(var(--highlight))]">{voucher.discount}</p>
             <p className="text-[10px] sm:text-xs font-semibold uppercase text-accent-foreground/80">Discount</p>
             <div className="mt-1 sm:mt-2 space-y-1">
-               <Button variant="ghost" size="sm" className="h-auto px-2 py-1 text-xs" onClick={handleCopyCode}>
-                <Copy className="h-3 w-3 mr-1" />
-                Copy Code
+               <Button variant="ghost" size="sm" className="h-auto px-2 py-1 text-xs" onClick={handleBuyNow}>
+                <ShoppingCart className="h-3 w-3 mr-1" />
+                Buy Now
               </Button>
             </div>
           </div>
