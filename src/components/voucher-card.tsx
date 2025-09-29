@@ -30,7 +30,7 @@ export default function VoucherCard({ voucher, isHighlighted = false }: VoucherC
         isHighlighted && 'shadow-lg ring-2 ring-offset-2 ring-[hsl(var(--highlight))]'
       )}
     >
-      <div className="relative flex min-h-[140px]">
+      <div className="relative flex min-h-[140px] text-card-foreground">
         {voucher.isNew && (
           <Badge
             className="absolute -right-2 -top-2 z-10 animate-pulse bg-[hsl(var(--highlight))] text-[hsl(var(--highlight-foreground))] border-transparent"
@@ -54,7 +54,7 @@ export default function VoucherCard({ voucher, isHighlighted = false }: VoucherC
           </CardContent>
         </div>
         <div className="relative w-1/3 rounded-r-lg border-l-2 border-dashed bg-accent/30 dark:bg-accent/10 p-2 sm:p-4">
-          <div className="absolute top-1/2 -left-[13px] -translate-y-1/2 h-6 w-6 rounded-full bg-background"></div>
+          <div className="absolute top-1/2 -left-[13px] -translate-y-1/2 h-6 w-6 rounded-full bg-background dark:bg-background"></div>
           <div className="flex h-full flex-col items-center justify-center text-center">
             <p className="text-xl sm:text-2xl font-bold text-[hsl(var(--highlight))]">{voucher.discount}</p>
             <p className="text-[10px] sm:text-xs font-semibold uppercase text-accent-foreground/80">Discount</p>
