@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { TicketPercent, User, Lock, LoaderCircle, Eye, EyeOff, Hand } from 'lucide-react';
 import Link from 'next/link';
+import { getAdminCredentials } from '@/lib/members';
 
 const loginSchema = z.object({
   username: z.string().min(1, 'Username is required.'),
@@ -37,11 +38,11 @@ export default function AdminAuth({ onLoginSuccess }: AdminAuthProps) {
     },
   });
 
-  const handleLogin = (values: LoginFormValues) => {
+  const handleLogin = async (values: LoginFormValues) => {
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      if (values.username === 'admin' && values.password === 'password') {
+    try {
+      const admin = await getAdminCredentials();
+      if (admin && values.username === admin.username && values.password === admin.password) {
         toast({
           title: 'Login Successful',
           description: 'Welcome back, Albertine!',
@@ -55,13 +56,21 @@ export default function AdminAuth({ onLoginSuccess }: AdminAuthProps) {
         });
         form.reset();
       }
+    } catch (error) {
+       toast({
+        variant: 'destructive',
+        title: 'Login Error',
+        description: 'Could not verify credentials. Please try again.',
+      });
+    }
+    finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
     <div className="flex min-h-screen w-full flex-col items-center justify-center bg-background p-4 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-1 bg-green-500"></div>
+        <div className="absolute top-0 left-0 w-full h-1 bg-purple-500"></div>
         <div className="absolute top-1/4 left-1/4 w-16 h-16 bg-foreground/5 transform rotate-45 opacity-50"></div>
         <div className="absolute bottom-1/4 right-1/4 w-24 h-24 bg-foreground/5 transform rotate-12 opacity-50"></div>
         <div className="absolute top-1/2 right-1/4 w-8 h-8 bg-foreground/5 transform rotate-45 opacity-50"></div>
@@ -70,7 +79,7 @@ export default function AdminAuth({ onLoginSuccess }: AdminAuthProps) {
       <Card className="w-full max-w-sm rounded-lg z-10">
         <CardHeader className="text-center space-y-4">
             <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2">
-                <TicketPercent className="h-8 w-8 text-green-400" />
+                <TicketPercent className="h-8 w-8 text-purple-400" />
                 <h1 className="font-headline text-2xl sm:text-3xl font-bold tracking-tight text-white">
                     Luco
                 </h1>

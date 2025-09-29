@@ -1,7 +1,38 @@
 
-import { collection, getDocs, query, orderBy, addDoc, where, Timestamp, limit, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, addDoc, where, Timestamp, limit, doc, deleteDoc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Member, NewMember } from '@/types';
+
+// This is a simplified approach. In a real application, you would have a more secure way
+// to manage admin credentials, likely in a separate 'admins' collection.
+export async function getAdminCredentials(): Promise<{username: string, password?: string} | null> {
+  // For now, let's assume the admin is the first member created or has a specific username.
+  // This is NOT secure for production.
+  const q = query(collection(db, "members"), where("username", "==", "admin"), limit(1));
+  const querySnapshot = await getDocs(q);
+
+  if (querySnapshot.empty) {
+     // As a fallback for the demo, if 'admin' user doesn't exist, create it.
+     // In a real app, you'd have a proper setup flow.
+    const adminRef = await addDoc(collection(db, "members"), {
+        username: "admin",
+        password: "password",
+        phone: "0000000000",
+        subscriptionAmount: 0,
+        joinedAt: Timestamp.now(),
+    });
+    const adminSnap = await getDoc(adminRef);
+    const adminData = adminSnap.data();
+    return adminData ? { username: adminData.username, password: adminData.password } : null;
+  }
+  
+  const adminDoc = querySnapshot.docs[0];
+  const adminData = adminDoc.data();
+  return {
+    username: adminData.username,
+    password: adminData.password
+  };
+}
 
 export async function addMember(memberData: NewMember): Promise<void> {
   const membersRef = collection(db, 'members');
