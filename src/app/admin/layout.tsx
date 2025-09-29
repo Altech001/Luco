@@ -6,11 +6,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { LayoutDashboard, Ticket, Users, BarChart, Settings, Home, TicketPercent, Menu, LoaderCircle, Image as ImageIcon, Bell, FileText, Search, SlidersHorizontal, Link2, Landmark, Printer, MessageSquare, Cookie, Server, Eraser, Power } from 'lucide-react';
+import { LayoutDashboard, Ticket, Users, BarChart, Settings, Home, TicketPercent, LoaderCircle, Image as ImageIcon, Bell, FileText, Search, Power, MessageSquareQuestion, SlidersHorizontal, UserCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/theme-toggle';
 import AdminAuth from '@/components/admin-auth';
-import { SidebarProvider, Sidebar, SidebarTrigger, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarMenuSub, SidebarMenuSubButton } from '@/components/ui/sidebar';
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -37,40 +37,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         description: 'You have been successfully logged out.',
     });
   };
-
+  
   const mainNav = [
-    { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/admin', label: 'Dashboard', icon: SlidersHorizontal },
     { href: '/admin/banners', label: 'Banners', icon: ImageIcon },
     { href: '/admin/vouchers', label: 'Vouchers', icon: Ticket },
-    { href: '/admin/vouchers/voucher-profiles', label: 'Voucher Profiles', icon: FileText },
     { href: '/admin/members', label: 'Members', icon: Users },
+    { href: '/admin/subscribers', label: 'Subscribers', icon: Bell },
+    { href: '/admin/analytics', label: 'Analytics', icon: BarChart },
   ];
 
-  const secondaryNav = [
-      {
-          label: '-- General',
-          items: [
-              { href: '/admin/analytics', label: 'Analytics', icon: BarChart },
-              { href: '/admin/settings', label: 'Settings', icon: Settings },
-              { href: '/admin/subscribers', label: 'Subscribers', icon: Bell },
-          ]
-      },
-      {
-          label: '-- Payment Methods',
-          items: [
-              { href: '#', label: 'Add Money', icon: Landmark },
-              { href: '#', label: 'Money Out', icon: Printer },
-          ]
-      },
-      {
-          label: '-- Bonus',
-          items: [
-              { href: '#', label: 'GDPR Cookie', icon: Cookie },
-              { href: '#', label: 'Server Info', icon: Server },
-              { href: '#', label: 'Clear Cache', icon: Eraser },
-          ]
-      }
+  const bottomNav = [
+    { href: '/admin/settings', label: 'Settings', icon: Settings },
+    { href: '/', label: 'Go to App', icon: Home },
+    { action: handleLogout, label: 'Logout', icon: Power },
   ]
+
 
   if (isCheckingAuth) {
     return (
@@ -85,82 +67,70 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <SidebarProvider>
-      <Sidebar variant="inset" collapsible="icon" className="group/sidebar">
-        <SidebarContent className="flex flex-col p-2">
-            <div>
-                <div className='flex justify-between items-center group-data-[collapsible=icon]:justify-center mb-4'>
-                    <div className='flex items-center gap-2 group-data-[collapsible=icon]:hidden'>
-                        <TicketPercent className="h-7 w-7 text-[hsl(var(--highlight))]" />
-                        <h1 className="font-headline text-xl sm:text-2xl font-bold tracking-tight">Luco</h1>
-                    </div>
-                    <ThemeToggle />
+    <TooltipProvider>
+        <div className="flex min-h-screen">
+            <aside className="w-16 flex flex-col items-center gap-y-4 py-4 bg-background border-r">
+                <div className="flex items-center justify-center">
+                    <TicketPercent className="h-7 w-7 text-primary" />
                 </div>
-                
-                <SidebarGroup>
-                    <SidebarMenu>
-                        {mainNav.map(item => (
-                            <SidebarMenuItem key={item.href}>
-                                <SidebarMenuButton asChild tooltip={item.label} isActive={pathname === item.href}>
+                <nav className="flex flex-col gap-y-2 flex-1">
+                    {mainNav.map((item) => (
+                        <Tooltip key={item.label}>
+                            <TooltipTrigger asChild>
+                                <Link href={item.href}>
+                                    <Button variant={pathname === item.href ? 'secondary' : 'ghost'} size="icon" className="h-10 w-10">
+                                        <item.icon className="h-5 w-5" />
+                                    </Button>
+                                </Link>
+                            </TooltipTrigger>
+                            <TooltipContent side="right" sideOffset={5}>
+                                {item.label}
+                            </TooltipContent>
+                        </Tooltip>
+                    ))}
+                </nav>
+                <div className="flex flex-col gap-y-2 mt-auto">
+                    <ThemeToggle />
+                     {bottomNav.map((item) => (
+                        <Tooltip key={item.label}>
+                            <TooltipTrigger asChild>
+                                {item.href ? (
                                     <Link href={item.href}>
-                                        <item.icon />
-                                        <span>{item.label}</span>
+                                        <Button variant='ghost' size="icon" className="h-10 w-10">
+                                            <item.icon className="h-5 w-5" />
+                                        </Button>
                                     </Link>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
-                        ))}
-                    </SidebarMenu>
-                </SidebarGroup>
-
-                {secondaryNav.map(group => (
-                    <SidebarGroup key={group.label}>
-                        <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">{group.label}</SidebarGroupLabel>
-                        <SidebarMenu>
-                            {group.items.map(item => (
-                                <SidebarMenuItem key={item.label}>
-                                    <SidebarMenuButton asChild tooltip={item.label} isActive={pathname === item.href}>
-                                        <Link href={item.href || "#"}>
-                                            <item.icon />
-                                            <span>{item.label}</span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            ))}
-                        </SidebarMenu>
-                    </SidebarGroup>
-                ))}
-            </div>
-            <div className='mt-auto'>
-                <SidebarMenu className="grid grid-cols-2 gap-1">
-                    <SidebarMenuItem>
-                        <SidebarMenuButton onClick={handleLogout} tooltip="Logout">
-                            <Power/>
-                            <span className="group-data-[collapsible=icon]:hidden">Logout</span>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton asChild tooltip="Go to App">
-                            <Link href="/">
-                                <Home/>
-                                <span className="group-data-[collapsible=icon]:hidden">Go to App</span>
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
-            </div>
-        </SidebarContent>
-      </Sidebar>
-      <main className="flex-1">
-         <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-4 border-b bg-background px-6">
-            <SidebarTrigger className="md:hidden"/>
-             <h1 className="text-xl font-semibold">
-              {[...mainNav, ...secondaryNav.flatMap(g => g.items)].find(item => item.href === pathname)?.label || 'Dashboard'}
-            </h1>
-         </header>
-         <div className="p-6">
-            {children}
-         </div>
-      </main>
-    </SidebarProvider>
+                                ) : (
+                                     <Button onClick={item.action} variant='ghost' size="icon" className="h-10 w-10">
+                                        <item.icon className="h-5 w-5" />
+                                    </Button>
+                                )}
+                            </TooltipTrigger>
+                            <TooltipContent side="right" sideOffset={5}>
+                                {item.label}
+                            </TooltipContent>
+                        </Tooltip>
+                    ))}
+                </div>
+            </aside>
+            <main className="flex-1">
+                 <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-4 border-b bg-background px-6">
+                    <h1 className="text-xl font-semibold">
+                        {[...mainNav].find(item => item.href === pathname)?.label || 'Dashboard'}
+                    </h1>
+                    <div className="flex items-center gap-4">
+                        <Button variant="outline" size="sm">
+                            <Search className="mr-2 h-4 w-4" />
+                            Search...
+                        </Button>
+                        <UserCircle className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                </header>
+                <div className="p-6">
+                    {children}
+                </div>
+            </main>
+        </div>
+    </TooltipProvider>
   );
 }
