@@ -271,9 +271,9 @@ const PaymentFlow = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Test Payment Flow</CardTitle>
+        <CardTitle>Deposit Amount</CardTitle>
         <CardDescription>
-          Step through the payment process using the LucoPay API.
+          Use this form to deposit funds using the LucoPay API.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -500,3 +500,5 @@ export default function SettingsPage() {
     </>
   );
 }
+
+    
