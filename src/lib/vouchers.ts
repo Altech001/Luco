@@ -3,7 +3,7 @@ import { collection, getDocs, getDoc, query, orderBy, addDoc, doc, deleteDoc, up
 import { db } from './firebase';
 import type { Voucher, VoucherCategoryName, VoucherProfile, NewVoucherProfileData } from '@/types';
 
-type NewVoucherData = Omit<Voucher, 'id' | 'status' | 'purchasedBy'>;
+type NewVoucherData = Omit<Voucher, 'id' | 'status' | 'purchasedBy' | 'purchasedAt'>;
 
 export async function addVoucher(voucherData: NewVoucherData): Promise<void> {
   await addDoc(collection(db, 'vouchers'), {
@@ -72,6 +72,7 @@ export async function getVouchers(includeInactive = false): Promise<Voucher[]> {
       isNew: data.isNew || false,
       status: status,
       purchasedBy: data.purchasedBy,
+      purchasedAt: data.purchasedAt?.toDate(),
     });
   });
 
@@ -106,13 +107,14 @@ export async function getVoucherById(id: string): Promise<Voucher | undefined> {
       isNew: data.isNew || false,
       status: status,
       purchasedBy: data.purchasedBy,
+      purchasedAt: data.purchasedAt?.toDate(),
     }
   } else {
     return undefined;
   }
 }
 
-export async function updateVoucher(id: string, data: Partial<NewVoucherData & { status?: string, purchasedBy?: string }>): Promise<void> {
+export async function updateVoucher(id: string, data: Partial<NewVoucherData & { status?: string, purchasedBy?: string, purchasedAt?: Timestamp }>): Promise<void> {
   const voucherRef = doc(db, 'vouchers', id);
   await updateDoc(voucherRef, data);
 }

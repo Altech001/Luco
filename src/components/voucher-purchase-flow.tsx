@@ -15,6 +15,7 @@ import type { Voucher } from '@/types';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
 import { updateVoucher } from '@/lib/vouchers';
+import { Timestamp } from 'firebase/firestore';
 
 type PurchaseStep = 'enter-phone' | 'confirm-identity' | 'verify-payment' | 'receipt';
 
@@ -111,7 +112,11 @@ export default function VoucherPurchaseFlow({ voucher, onComplete }: VoucherPurc
     try {
       await new Promise(res => setTimeout(res, 1000)); // Simulate verification
       if (values.code === '123456') { // Mock OTP
-        await updateVoucher(voucher.id, { status: 'purchased', purchasedBy: phoneNumber });
+        await updateVoucher(voucher.id, { 
+          status: 'purchased', 
+          purchasedBy: phoneNumber,
+          purchasedAt: Timestamp.now() 
+        });
         setStep('receipt');
         toast({
           title: 'Purchase Successful!',
@@ -298,7 +303,7 @@ export default function VoucherPurchaseFlow({ voucher, onComplete }: VoucherPurc
                     </div>
                     <div className="relative w-1/3 rounded-r-lg border-l-2 border-dashed bg-accent/30 dark:bg-accent/10 p-2">
                       <div className="flex h-full flex-col items-center justify-center text-center">
-                        <TicketIcon className="h-10 w-10 text-[hsl(var(--highlight))]" />
+                        <TicketIcon className="h-10 w-10 text-[hsl(var(--highlight))]"/>
                         <p className="mt-2 text-xl font-bold text-[hsl(var(--highlight))]">{voucher.discount}</p>
                       </div>
                     </div>

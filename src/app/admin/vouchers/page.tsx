@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, LoaderCircle, MoreHorizontal, Pencil, Trash2, Ticket, Tag, Calendar, DollarSign, Percent, FileText, Upload, ArrowLeft, ShoppingCart } from 'lucide-react';
+import { PlusCircle, LoaderCircle, MoreHorizontal, Pencil, Trash2, Ticket, Tag, Calendar, DollarSign, Percent, FileText, Upload, ArrowLeft, ShoppingCart, Download } from 'lucide-react';
 import { Switch } from "@/components/ui/switch"
 import type { Voucher, VoucherProfile } from '@/types';
 import { getVouchers, addVoucher, updateVoucher, deleteVoucher, batchAddVouchers, getVoucherProfiles, batchDeleteVouchers } from '@/lib/vouchers';
@@ -527,7 +527,7 @@ export default function VouchersPage() {
     minimumFractionDigits: 0,
   }).format(price);
 
-  const { vouchersByCategory, purchasedCount } = useMemo(() => {
+  const { vouchersByCategory, purchasedCount, purchasedVouchers } = useMemo(() => {
     const categorized = vouchers.reduce((acc, voucher) => {
       const category = voucher.category;
       if (!acc[category]) {
@@ -537,9 +537,9 @@ export default function VouchersPage() {
       return acc;
     }, {} as Record<string, Voucher[]>);
 
-    const purchased = vouchers.filter(v => v.status === 'purchased').length;
+    const purchased = vouchers.filter(v => v.status === 'purchased');
 
-    return { vouchersByCategory: categorized, purchasedCount: purchased };
+    return { vouchersByCategory: categorized, purchasedCount: purchased.length, purchasedVouchers: purchased };
   }, [vouchers]);
 
   const handleCategoryClick = (categoryName: string) => {
@@ -553,7 +553,6 @@ export default function VouchersPage() {
   }, [selectedCategory]);
 
   const currentVouchers = selectedCategory ? vouchersByCategory[selectedCategory] || [] : [];
-  const purchasedVouchers = vouchers.filter(v => v.status === 'purchased');
   
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -569,6 +568,27 @@ export default function VouchersPage() {
     } else {
       setSelectedVouchers(prev => prev.filter(id => id !== voucherId));
     }
+  };
+
+  const handleExportPurchased = () => {
+    const dataToExport = purchasedVouchers.map(v => ({
+      phone: v.purchasedBy,
+      voucher_code: v.code,
+      purchased_at: v.purchasedAt ? format(new Date(v.purchasedAt), 'yyyy-MM-dd HH:mm:ss') : 'N/A',
+    }));
+
+    const csv = Papa.unparse(dataToExport);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', 'purchased_vouchers.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast({
+      title: 'Export Complete',
+      description: 'The purchased voucher data has been downloaded as a CSV file.',
+    });
   };
 
   const renderGridView = () => (
@@ -683,7 +703,7 @@ export default function VouchersPage() {
                   <TableRow>
                     <TableHead padding="checkbox" className="w-12">
                       <Checkbox
-                        checked={selectedVouchers.length > 0 && selectedVouchers.length === currentVouchers.length}
+                        checked={selectedVouchers.length > 0 && currentVouchers.length > 0 && selectedVouchers.length === currentVouchers.length}
                         onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
                         aria-label="Select all"
                       />
@@ -797,64 +817,110 @@ export default function VouchersPage() {
   );
 
   const renderPurchasedView = () => (
-     <div className="flex flex-col gap-8">
-      <div className="flex items-center justify-between gap-2">
-        <div className='flex items-center gap-4'>
-           <Button variant="outline" size="icon" onClick={() => setView('grid')}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <h1 className="text-3xl font-bold">Purchased Vouchers</h1>
+     <AlertDialog>
+      <div className="flex flex-col gap-8">
+        <div className="flex items-center justify-between gap-2">
+            <div className='flex items-center gap-4'>
+            <Button variant="outline" size="icon" onClick={() => setView('grid')}>
+                <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-3xl font-bold">Purchased Vouchers</h1>
+            </div>
+             <Button variant="outline" onClick={handleExportPurchased} disabled={purchasedVouchers.length === 0}>
+                <Download className="mr-2 h-4 w-4" /> Export
+            </Button>
         </div>
-      </div>
-       <Card>
-        <CardHeader>
-          <CardTitle>Purchased Voucher List</CardTitle>
-          <CardDescription>
-            A list of all vouchers that have been successfully purchased.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-             <div className="flex items-center justify-center py-20">
-              <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Price</TableHead>
-                    <TableHead>Code</TableHead>
-                    <TableHead>Purchased By</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {purchasedVouchers.length > 0 ? (
-                    purchasedVouchers.map((voucher) => (
-                      <TableRow key={voucher.id}>
-                        <TableCell className="font-medium">{voucher.title}</TableCell>
-                        <TableCell>{voucher.category}</TableCell>
-                        <TableCell>{formattedPrice(voucher.price)}</TableCell>
-                        <TableCell><Badge variant="outline">{voucher.code}</Badge></TableCell>
-                        <TableCell>{voucher.purchasedBy || 'N/A'}</TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                     <TableRow>
-                      <TableCell colSpan={5} className="h-24 text-center">
-                        No vouchers have been purchased yet.
-                      </TableCell>
+        <Card>
+            <CardHeader>
+            <CardTitle>Purchased Voucher List</CardTitle>
+            <CardDescription>
+                A list of all vouchers that have been successfully purchased.
+            </CardDescription>
+            </CardHeader>
+            <CardContent>
+            {isLoading ? (
+                <div className="flex items-center justify-center py-20">
+                <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            ) : (
+                <div className="rounded-md border">
+                <Table>
+                    <TableHeader>
+                    <TableRow>
+                        <TableHead>Title</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead>Price</TableHead>
+                        <TableHead>Code</TableHead>
+                        <TableHead>Purchased By</TableHead>
+                        <TableHead><span className="sr-only">Actions</span></TableHead>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-       </Card>
-    </div>
+                    </TableHeader>
+                    <TableBody>
+                    {purchasedVouchers.length > 0 ? (
+                        purchasedVouchers.map((voucher) => (
+                        <TableRow key={voucher.id}>
+                            <TableCell className="font-medium">{voucher.title}</TableCell>
+                            <TableCell>{voucher.category}</TableCell>
+                            <TableCell>{formattedPrice(voucher.price)}</TableCell>
+                            <TableCell><Badge variant="outline">{voucher.code}</Badge></TableCell>
+                            <TableCell>{voucher.purchasedBy || 'N/A'}</TableCell>
+                             <TableCell>
+                                <AlertDialog>
+                                    <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button aria-haspopup="true" size="icon" variant="ghost">
+                                        <MoreHorizontal className="h-4 w-4" />
+                                        <span className="sr-only">Toggle menu</span>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                        <DropdownMenuItem onSelect={() => {
+                                            setSelectedVoucher(voucher);
+                                            setIsAddEditDialogOpen(true);
+                                        }}>
+                                            <Pencil className="mr-2 h-4 w-4" /> Edit
+                                        </DropdownMenuItem>
+                                        <AlertDialogTrigger asChild>
+                                        <DropdownMenuItem className="text-destructive focus:text-destructive">
+                                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                        </DropdownMenuItem>
+                                        </AlertDialogTrigger>
+                                    </DropdownMenuContent>
+                                    </DropdownMenu>
+                                    <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                        This action cannot be undone. This will permanently delete the voucher.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleDelete(voucher.id)}>
+                                        Delete
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </TableCell>
+                        </TableRow>
+                        ))
+                    ) : (
+                        <TableRow>
+                        <TableCell colSpan={6} className="h-24 text-center">
+                            No vouchers have been purchased yet.
+                        </TableCell>
+                        </TableRow>
+                    )}
+                    </TableBody>
+                </Table>
+                </div>
+            )}
+            </CardContent>
+        </Card>
+        </div>
+    </AlertDialog>
   );
 
   return (

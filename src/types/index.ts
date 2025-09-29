@@ -17,6 +17,7 @@ export type Voucher = {
   isNew?: boolean;
   status: VoucherStatus;
   purchasedBy?: string;
+  purchasedAt?: Date;
 };
 
 export type VoucherProfile = {
