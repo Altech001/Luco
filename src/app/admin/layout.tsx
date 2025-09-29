@@ -42,6 +42,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { href: '/admin', label: 'Dashboard', icon: SlidersHorizontal },
     { href: '/admin/banners', label: 'Banners', icon: ImageIcon },
     { href: '/admin/vouchers', label: 'Vouchers', icon: Ticket },
+    { href: '/admin/bulk-manager', label: 'Bulk Manager', icon: MessageSquareQuestion },
     { href: '/admin/members', label: 'Members', icon: Users },
     { href: '/admin/subscribers', label: 'Subscribers', icon: Bell },
     { href: '/admin/analytics', label: 'Analytics', icon: BarChart },
