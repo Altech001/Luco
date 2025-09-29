@@ -106,7 +106,6 @@ const PaymentFlow = () => {
       if (data.success) {
         setStep('status');
         toast({ title: 'Payment Initiated', description: 'Checking transaction status...' });
-        // Start polling for status
         pollPaymentStatus(uniqueReference);
       } else {
         toast({ variant: 'destructive', title: 'Payment Failed', description: data.message });
@@ -120,19 +119,8 @@ const PaymentFlow = () => {
     }
   };
 
-  const pollPaymentStatus = async (ref: string) => {
-    let attempts = 0;
-    const maxAttempts = 10;
-    const interval = 3000; // 3 seconds
-
-    const check = async () => {
-      if (attempts >= maxAttempts) {
-        setPaymentStatus('timeout');
-        setStep('failed');
-        toast({ variant: 'destructive', title: 'Status Check Timed Out', description: 'Could not get payment status in time.' });
-        return;
-      }
-      attempts++;
+  const pollPaymentStatus = (ref: string) => {
+    const intervalId = setInterval(async () => {
       try {
         const response = await fetch('https://lucopay.onrender.com/api/v1/payment_webhook', {
           method: 'POST',
@@ -142,25 +130,24 @@ const PaymentFlow = () => {
         const data = await response.json();
 
         if (data.status === 'succeeded') {
+          clearInterval(intervalId);
           setPaymentStatus('succeeded');
           setStep('completed');
           toast({ title: 'Payment Successful!', className: 'bg-green-500 text-white' });
         } else if (data.status === 'failed') {
+          clearInterval(intervalId);
           setPaymentStatus('failed');
           setStep('failed');
           toast({ variant: 'destructive', title: 'Payment Failed', description: 'The transaction was not successful.' });
-        } else {
-          // If pending, try again
-          setTimeout(check, interval);
         }
+        // If status is 'pending', the interval continues to run
       } catch (err) {
+        clearInterval(intervalId);
         setPaymentStatus('error');
         setStep('failed');
         toast({ variant: 'destructive', title: 'Status Check Error', description: 'Could not retrieve payment status.' });
       }
-    };
-    // Initial check
-    setTimeout(check, interval);
+    }, 2000); // Check every 2 seconds
   };
   
   const resetFlow = () => {
@@ -257,7 +244,7 @@ const PaymentFlow = () => {
             <div className="flex flex-col items-center justify-center gap-4 text-center">
                 <XCircle className="h-12 w-12 text-destructive" />
                 <h3 className="font-semibold text-lg">Payment Failed</h3>
-                <Badge variant="destructive">Status: {paymentStatus}</Badge>
+                <Badge variant="destructive">Status: {paymentStatus || 'failed'}</Badge>
                 <p className="text-sm text-muted-foreground">Something went wrong. Please try again.</p>
                 <Button onClick={resetFlow} className="mt-4 w-full">Try Again</Button>
             </div>
@@ -499,3 +486,5 @@ export default function SettingsPage() {
     </>
   );
 }
+
+    
