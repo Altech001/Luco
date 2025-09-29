@@ -1,5 +1,5 @@
 
-import { collection, getDocs, query, orderBy, addDoc, where, Timestamp, limit } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, addDoc, where, Timestamp, limit, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Subscriber } from '@/types';
 
@@ -37,4 +37,14 @@ export async function getSubscribers(): Promise<Subscriber[]> {
   });
 
   return subscribers;
+}
+
+export async function updateSubscriber(id: string, phone: string): Promise<void> {
+  const subscriberRef = doc(db, 'subscribers', id);
+  await updateDoc(subscriberRef, { phone });
+}
+
+export async function deleteSubscriber(id: string): Promise<void> {
+  const subscriberRef = doc(db, 'subscribers', id);
+  await deleteDoc(subscriberRef);
 }
