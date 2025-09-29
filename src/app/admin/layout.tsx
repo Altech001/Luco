@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { LayoutDashboard, Ticket, Users, BarChart, Settings, Home, TicketPercent, LoaderCircle, Image as ImageIcon, Bell, FileText, Search, Power, MessageSquareQuestion, SlidersHorizontal, UserCircle } from 'lucide-react';
+import { LayoutDashboard, Ticket, Users, BarChart, Settings, Home, TicketPercent, LoaderCircle, Image as ImageIcon, Bell, FileText, Search, Power, MessageSquareQuote, SlidersHorizontal, UserCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/theme-toggle';
 import AdminAuth from '@/components/admin-auth';
@@ -42,7 +42,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { href: '/admin', label: 'Dashboard', icon: SlidersHorizontal },
     { href: '/admin/banners', label: 'Banners', icon: ImageIcon },
     { href: '/admin/vouchers', label: 'Vouchers', icon: Ticket },
-    { href: '/admin/bulk-manager', label: 'Bulk Manager', icon: MessageSquareQuestion },
+    { href: '/admin/bulk-manager', label: 'Bulk Manager', icon: MessageSquareQuote },
     { href: '/admin/members', label: 'Members', icon: Users },
     { href: '/admin/subscribers', label: 'Subscribers', icon: Bell },
     { href: '/admin/analytics', label: 'Analytics', icon: BarChart },
