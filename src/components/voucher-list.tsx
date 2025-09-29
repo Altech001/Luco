@@ -37,7 +37,7 @@ export default function VoucherList({
 
   return (
     <div>
-      <h2 className="font-headline text-3xl font-bold tracking-tight">Available Vouchers</h2>
+      <h2 className="font-headline text-2xl sm:text-3xl font-bold tracking-tight">Available Vouchers</h2>
       <Tabs defaultValue={initialTab} className="mt-4" onValueChange={handleValueChange}>
         <TabsList className="flex h-auto flex-wrap justify-start">
           {allCategories.map(cat => (
